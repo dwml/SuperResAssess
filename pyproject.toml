@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "superresassess"
+version = "0.1.0"
+description = "The code for a study on the assessment of super-resolution for brain MRI"
+authors = ["dirk <dirk.loeffen@radboudumc.nl>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+monai = "^1.3.1"
+lightning = "^2.3.0"
+pytest = "^8.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
