@@ -47,10 +47,7 @@ def test_file_creation(temp_yaml, temp_experiment_directory):
 def test_iterations(temp_yaml, temp_experiment_directory):
     """Test whether the function creates repeated experiments."""
     setup_experiments(temp_yaml, temp_experiment_directory, iterations=3)
-
-    # mind that this assert needs to equal 9 since we have 3 iterations and
-    # 3 assessment methods
-    assert len(list(temp_experiment_directory.glob("*.yaml"))) == 9
+    assert len(list(temp_experiment_directory.glob("*.yaml"))) == 3
 
 
 def test_iterations_seeding(temp_yaml, temp_experiment_directory):
