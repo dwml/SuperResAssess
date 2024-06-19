@@ -1,0 +1,8 @@
+---
+  starting_seed: 2024
+  assessment_methods:
+    - three_way_holdout
+    - nested_cross_validation
+    - k_fold_cross_validation
+  model: SRCNN
+  data: HCP_T2_SKULL_STRIPPED
