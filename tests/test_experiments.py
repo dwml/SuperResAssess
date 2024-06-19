@@ -47,7 +47,9 @@ def test_file_creation(temp_yaml, temp_experiment_directory):
 def test_iterations(temp_yaml, temp_experiment_directory):
     """Test whether the function creates repeated experiments."""
     setup_experiments(temp_yaml, temp_experiment_directory, iterations=3)
-    assert len(list(temp_experiment_directory.glob("*.yaml"))) == 3
+    # this assertion should be equal to 9 since it is 3 iterations with 3
+    # assessment methods
+    assert len(list(temp_experiment_directory.glob("*.yaml"))) == 9
 
 
 def test_iterations_seeding(temp_yaml, temp_experiment_directory):
@@ -66,18 +68,21 @@ def test_assessment_methods(temp_yaml, temp_experiment_directory):
     experiment_1_dict = _read_yaml_as_individual_experiment(
         temp_experiment_directory / "00001.yaml"
     )
-    experiment_3_dict = _read_yaml_as_individual_experiment(
-        temp_experiment_directory / "00003.yaml"
+    experiment_4_dict = _read_yaml_as_individual_experiment(
+        temp_experiment_directory / "00004.yaml"
     )
     experiment_5_dict = _read_yaml_as_individual_experiment(
         temp_experiment_directory / "00005.yaml"
     )
 
     # the first one should be three way holdout
+    assert experiment_1_dict["seed"] == 2024
     assert experiment_1_dict["assessment_method"] == "three_way_holdout"
 
     # the third one should be nested cross validation
-    assert experiment_3_dict["assessment_method"] == "nested_cross_validation"
+    assert experiment_4_dict["seed"] == 2025
+    assert experiment_4_dict["assessment_method"] == "nested_cross_validation"
 
     # the fifth one should be k fold cross validation
+    assert experiment_5_dict["seed"] == 2024
     assert experiment_5_dict["assessment_method"] == "k_fold_cross_validation"
