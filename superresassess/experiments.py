@@ -1,5 +1,5 @@
 import yaml
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -9,12 +9,14 @@ class ExperimentConfiguration(BaseModel):
     """The data that is needed to configure all individual experiments."""
 
     initial_seed: int
+    assessment_methods: List[str]
 
 
 class IndividualExperiment(BaseModel):
     """The data that is needed to run an individual experiment."""
 
     seed: int
+    assessment_method: str
 
 
 def _read_yaml_as_experiment_configuration(yaml_file: Path) -> dict:
@@ -50,19 +52,26 @@ def setup_experiments(
             different seed
     """
     experiment_config = _read_yaml_as_experiment_configuration(yaml_file)
+    initial_seed = experiment_config["initial_seed"]
 
     if iterations is None:
-        seed = experiment_config["initial_seed"]
-        individual_experiment = IndividualExperiment(seed=seed)
-        _write_individual_experiment_as_yaml(
-            individual_experiment, destination_path / "00001.yaml"
-        )
+        for mthd in experiment_config["assessment_methods"]:
+            individual_experiment = IndividualExperiment(
+                seed=initial_seed, assessment_method=mthd
+            )
+            _write_individual_experiment_as_yaml(
+                individual_experiment, destination_path / "00001.yaml"
+            )
         return
 
-    # If we would like to repeat an experiment with a different seed we can do so:
-    for i in range(iterations):
-        seed = experiment_config["initial_seed"] + i
-        individual_experiment = IndividualExperiment(seed=seed)
-        _write_individual_experiment_as_yaml(
-            individual_experiment, destination_path / f"{1 + i:>05}.yaml"
-        )
+    # If we would like to repeat an experiment with a different seed we can do
+    for i, mthd in enumerate(experiment_config["assessment_methods"]):
+        for j in range(iterations):
+            seed = initial_seed + j
+            individual_experiment = IndividualExperiment(
+                seed=seed, assessment_method=mthd
+            )
+            _write_individual_experiment_as_yaml(
+                individual_experiment,
+                destination_path / f"{1 + i*iterations + j:>05}.yaml",
+            )
