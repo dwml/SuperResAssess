@@ -21,5 +21,9 @@ def test_yaml_reading(temp_yaml):
 
 
 def test_file_creation(temp_yaml, tmp_path):
+    """Test whether the function creates an individual experiment based on the
+    configuration file."""
     experiment_folder = tmp_path / "experiments"
+    experiment_folder.mkdir()
     setup_experiments(temp_yaml, experiment_folder)
+    assert (experiment_folder / "00001.yaml").exists()
