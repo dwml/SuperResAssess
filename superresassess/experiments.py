@@ -19,16 +19,16 @@ class IndividualExperiment(BaseModel):
     assessment_method: str
 
 
-def _read_yaml_as_experiment_configuration(yaml_file: Path) -> dict:
+def _read_yaml_as_experiment_configuration(yaml_file: Path) -> ExperimentConfiguration:
     with open(yaml_file, "r") as stream:
         config = yaml.safe_load(stream)
-    return ExperimentConfiguration(**config).model_dump()
+    return ExperimentConfiguration(**config)
 
 
-def _read_yaml_as_individual_experiment(yaml_file: Path) -> dict:
+def read_yaml_as_individual_experiment(yaml_file: Path) -> IndividualExperiment:
     with open(yaml_file, "r") as stream:
         config = yaml.safe_load(stream)
-    return IndividualExperiment(**config).model_dump()
+    return IndividualExperiment(**config)
 
 
 def _write_individual_experiment_as_yaml(
@@ -52,10 +52,10 @@ def setup_experiments(
             different seed
     """
     experiment_config = _read_yaml_as_experiment_configuration(yaml_file)
-    initial_seed = experiment_config["initial_seed"]
+    initial_seed = experiment_config.initial_seed
 
     if iterations is None:
-        for mthd in experiment_config["assessment_methods"]:
+        for mthd in experiment_config.assessment_methods:
             individual_experiment = IndividualExperiment(
                 seed=initial_seed, assessment_method=mthd
             )
@@ -65,7 +65,7 @@ def setup_experiments(
         return
 
     # If we would like to repeat an experiment with a different seed we can do
-    for i, mthd in enumerate(experiment_config["assessment_methods"]):
+    for i, mthd in enumerate(experiment_config.assessment_methods):
         for j in range(iterations):
             seed = initial_seed + j
             individual_experiment = IndividualExperiment(
