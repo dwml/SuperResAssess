@@ -1,6 +1,10 @@
 import pytest
 
-from superresassess.experiments import setup_experiments, _read_yaml_as_experiment
+from superresassess.experiments import (
+    setup_experiments,
+    _read_yaml_as_experiment_configuration,
+    _read_yaml_as_individual_experiment,
+)
 
 CONTENT = """
 ---
@@ -23,7 +27,7 @@ def temp_experiment_directory(tmp_path):
 
 
 def test_yaml_reading(temp_yaml):
-    experiment_dict = _read_yaml_as_experiment(temp_yaml)
+    experiment_dict = _read_yaml_as_experiment_configuration(temp_yaml)
     assert experiment_dict["initial_seed"] == 2024
 
 
@@ -32,3 +36,19 @@ def test_file_creation(temp_yaml, temp_experiment_directory):
     configuration file."""
     setup_experiments(temp_yaml, temp_experiment_directory)
     assert (temp_experiment_directory / "00001.yaml").exists()
+
+
+def test_iterations(temp_yaml, temp_experiment_directory):
+    """Test whether the function creates repeated experiments."""
+    setup_experiments(temp_yaml, temp_experiment_directory, iterations=3)
+    assert len(list(temp_experiment_directory.glob("*.yaml"))) == 3
+
+
+def test_iterations_seeding(temp_yaml, temp_experiment_directory):
+    """Test whether the function creates repeated experiments with different
+    seeds."""
+    setup_experiments(temp_yaml, temp_experiment_directory, iterations=3)
+    experiment_3_dict = _read_yaml_as_individual_experiment(
+        temp_experiment_directory / "00003.yaml"
+    )
+    assert experiment_3_dict["seed"] == 2026  # 2024 + 2
