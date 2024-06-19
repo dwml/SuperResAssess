@@ -9,6 +9,7 @@ class ExperimentConfiguration(BaseModel):
     """The data that is needed to configure all individual experiments."""
 
     initial_seed: int
+    iterations: Optional[int] = None
     assessment_methods: List[str]
 
 
@@ -38,9 +39,7 @@ def _write_individual_experiment_as_yaml(
         yaml.safe_dump(experiment.model_dump(), stream)
 
 
-def setup_experiments(
-    yaml_file: Path, destination_path: Path, iterations: Optional[int] = None
-):
+def setup_experiments(yaml_file: Path, destination_path: Path):
     """Given a configuration file, create the configuration files necessary to
     run the individual experiments.
 
@@ -53,6 +52,7 @@ def setup_experiments(
     """
     experiment_config = _read_yaml_as_experiment_configuration(yaml_file)
     initial_seed = experiment_config.initial_seed
+    iterations = experiment_config.iterations
 
     if iterations is None:
         for mthd in experiment_config.assessment_methods:
