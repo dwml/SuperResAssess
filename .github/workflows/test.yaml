@@ -1,0 +1,21 @@
+name: test-superresassess
+on: [pull_request]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v4
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v3
+      - name: Define a cache for the virtual environment based on the dependecies
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install the project dependencies
+        run: poetry install
+      - name: Run the automated tests
+        run: poetry run pytest -v
