@@ -997,7 +997,6 @@ HCP_1200/818455/T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/818859/T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/820745/T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/822244/T1w/T2w_acpc_dc_restore_brain.nii.gz
-HCP_1200/0T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/825048/T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/825553/T1w/T2w_acpc_dc_restore_brain.nii.gz
 HCP_1200/825654/T1w/T2w_acpc_dc_restore_brain.nii.gz
