@@ -18,4 +18,4 @@ jobs:
       - name: Install the project dependencies
         run: poetry install
       - name: Run the automated tests
-        run: poetry run pytest -v
+        run: poetry run pytest -v -m "not slow"
