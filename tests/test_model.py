@@ -1,10 +1,9 @@
-from superresassess.model import ReCNN, LitReCNN
+from superresassess.model import ReCNN
 from tests.utils import try_script_save
 import pytest
 import torch
 from monai.networks import eval_mode
 
-from lightning import Trainer
 
 CASES_3D = [
     [
