@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from monai.networks.layers.factories import Conv
+import lightning as L
 
 
 class ReCNN(nn.Module):
@@ -60,3 +61,42 @@ class ReCNN(nn.Module):
         x = self.intermediate_layers(x)
         x = self.final_conv(x)
         return x + x_in
+
+
+class LitReCNN(L.LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.model = ReCNN(
+            n_layers=5,
+            spatial_dims=3,
+            in_channels=1,
+            out_channels=32,
+            kernel_size=3,
+            stride=1,
+            padding="same",
+        )
+        self.loss = torch.nn.MSELoss()
+
+    def training_step(self, batch, batch_idx):
+        # batch_idx is needed for lighting
+        # name it here to avoid linting errors
+        _ = batch_idx
+        x, y = batch["img"], batch["lab"]
+        y_hat = self.model(x)
+        loss = self.loss(y_hat, y)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        # batch_idx is needed for lighting
+        # name it here to avoid linting errors
+        _ = batch_idx
+        x, y = batch["img"], batch["lab"]
+        y_hat = self.model(x)
+        loss = self.loss(y_hat, y)
+        self.log("validation_loss", loss, sync_dist=True)
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
