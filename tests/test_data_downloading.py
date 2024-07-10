@@ -42,6 +42,7 @@ def test_image_list(tmpdir, image_list):
     assert hcp.file_list[499] == IMAGE_500
     assert hcp.file_list[-1] == IMAGE_LAST
 
+
 @pytest.mark.slow
 def test_download_one_image(tmpdir, first_image_list):
     _ = HCP_T2W(tmpdir, first_image_list, download=True)
