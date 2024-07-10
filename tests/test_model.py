@@ -4,6 +4,7 @@ import pytest
 import torch
 from monai.networks import eval_mode
 
+
 CASES_3D = [
     [
         {
@@ -46,3 +47,15 @@ class TestReCNN:
         )
         test_data = torch.randn(16, 2, 32, 32, 32)
         try_script_save(net, test_data)
+
+
+class TestLightningWrapper:
+    """Testing is difficult since:
+
+    There is a logging in the training step and validation step that needs a lightning
+    module to be registered to a trainer. The trainer needs a train dataloader
+    implemented. I couldn't figure out how to register the lighting module to a
+    trainer without the data loader so I couldn't test these steps.
+    """
+
+    def __init__(self): ...
