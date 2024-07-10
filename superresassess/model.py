@@ -64,16 +64,27 @@ class ReCNN(nn.Module):
 
 
 class LitReCNN(L.LightningModule):
-    def __init__(self):
+    def __init__(
+        self,
+        n_layers: int,
+        spatial_dims: int,
+        in_channels: int,
+        intermediate_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int,
+        padding: str = "same",
+    ):
         super().__init__()
         self.model = ReCNN(
-            n_layers=5,
-            spatial_dims=3,
-            in_channels=1,
-            out_channels=32,
-            kernel_size=3,
-            stride=1,
-            padding="same",
+            n_layers=n_layers,
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            intermediate_channels=intermediate_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
         )
         self.loss = torch.nn.MSELoss()
 
