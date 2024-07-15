@@ -102,3 +102,11 @@ def test_assessment_methods(temp_yaml_iterations, temp_experiment_directory):
     # the fifth one should be k fold cross validation
     assert experiment_7_dict.seed == 2024
     assert experiment_7_dict.assessment_method == "k_fold_cross_validation"
+
+
+def test_multiple_methods_without_iterations(temp_yaml, temp_experiment_directory):
+    setup_experiments(temp_yaml, temp_experiment_directory)
+
+    assert (temp_experiment_directory / "00001.yaml").exists()
+    assert (temp_experiment_directory / "00002.yaml").exists()
+    assert (temp_experiment_directory / "00003.yaml").exists()
