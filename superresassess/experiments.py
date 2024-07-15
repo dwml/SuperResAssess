@@ -55,12 +55,12 @@ def setup_experiments(yaml_file: Path, destination_path: Path):
     iterations = experiment_config.iterations
 
     if iterations is None:
-        for mthd in experiment_config.assessment_methods:
+        for i, mthd in enumerate(experiment_config.assessment_methods):
             individual_experiment = IndividualExperiment(
                 seed=initial_seed, assessment_method=mthd
             )
             _write_individual_experiment_as_yaml(
-                individual_experiment, destination_path / "00001.yaml"
+                individual_experiment, destination_path / f"{1 + i:>05}.yaml"
             )
         return
 
