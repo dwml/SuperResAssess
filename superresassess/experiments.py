@@ -1,8 +1,9 @@
 import yaml
 from typing import Optional, List
 from pathlib import Path
+from pydantic import BaseModel, field_serializer
 
-from pydantic import BaseModel
+from superresassess.assessment_methods import AssessmentEnum
 
 
 class ExperimentConfiguration(BaseModel):
@@ -10,14 +11,18 @@ class ExperimentConfiguration(BaseModel):
 
     initial_seed: int
     iterations: Optional[int] = None
-    assessment_methods: List[str]
+    assessment_methods: List[AssessmentEnum]
 
 
 class IndividualExperiment(BaseModel):
     """The data that is needed to run an individual experiment."""
 
     seed: int
-    assessment_method: str
+    assessment_method: AssessmentEnum
+
+    @field_serializer("assessment_method")
+    def serialize_assessment_method(self, assessment_method: AssessmentEnum, _info):
+        return assessment_method.value
 
 
 def _read_yaml_as_experiment_configuration(yaml_file: Path) -> ExperimentConfiguration:
