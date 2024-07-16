@@ -23,6 +23,7 @@ def prepare_example_image(tmp_path) -> Path:
     return file_name
 
 
+@pytest.mark.slow
 def test_preprocessing_pipeline(prepare_example_image):
     parent_path = prepare_example_image.parent
     preprocessor = PrepareHRLRData(
