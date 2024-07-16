@@ -1,4 +1,6 @@
 from monai.networks import convert_to_torchscript
+from torch.utils.data import Dataset
+import torch
 import tempfile
 import os
 
@@ -25,3 +27,19 @@ def try_script_save(net, *inputs, device=None, rtol=1e-4, atol=0.0):
             rtol=rtol,
             atol=atol,
         )
+
+
+class MockDataset(Dataset):
+    def __init__(self, size: tuple[int, ...], length: int):
+        if not isinstance(size, tuple):
+            raise TypeError(
+                f"Size should be of type tuple but was of type: {type(size)}"
+            )
+        self.len = length
+        self.data = torch.randn((length,) + size)
+
+    def __getitem__(self, index: int) -> torch.Tensor:
+        return self.data[index]
+
+    def __len__(self) -> int:
+        return self.len
