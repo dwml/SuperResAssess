@@ -1,20 +1,22 @@
 name: test-superresassess
 on: [pull_request]
+
+env:
+  PYTHON_VERSION: "3.10"
+  POETRY_VERSION: "1.4.0"
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Python
-        uses: actions/setup-python@v4
       - name: Install poetry
-        uses: abatilo/actions-poetry@v3
-      - name: Define a cache for the virtual environment based on the dependecies
-        uses: actions/cache@v3
+        run: pipx install poetry
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
         with:
-          path: ./.venv
-          key: venv-${{ hashFiles('poetry.lock') }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "poetry"
       - name: Install the project dependencies
         run: poetry install
       - name: Run the automated tests
