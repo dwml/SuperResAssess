@@ -33,9 +33,8 @@ class HCP_T2W:
         self.download = download
         self.file_list = file_list
 
-        self.s3 = boto3.client("s3")
-
         if self.download:
+            self.s3 = boto3.client("s3")
             for file in self.file_list:
                 file_path = Path(file)
                 file_name = file_path.name
