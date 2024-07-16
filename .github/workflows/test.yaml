@@ -11,13 +11,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install poetry
-        run: pipx install poetry
+        run: |
+          pipx install poetry
       - name: Install Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: "poetry"
+          cache: poetry
+          cache-dependency-path: poetry.lock
+      - name: setup Poetry environment
+        run: |
+          poetry env use ${{ env.PYTHON_VERSION }}
       - name: Install the project dependencies
-        run: poetry install
+        run: |
+          poetry install --no-root
       - name: Run the automated tests
-        run: poetry run pytest -v -m "not slow"
+        run: |
+          poetry run pytest -vv -m "not slow" --disable-warnings
