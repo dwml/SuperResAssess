@@ -23,6 +23,7 @@ CASES_3D = [
 ]
 
 
+@pytest.mark.slow
 class TestReCNN:
 
     @pytest.mark.parametrize("params, input_shape, expected_shape", CASES_3D)
