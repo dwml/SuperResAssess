@@ -2,8 +2,12 @@ import pytest
 
 from superresassess.experiments import (
     setup_experiments,
-    _read_yaml_as_experiment_configuration,
-    read_yaml_as_individual_experiment,
+    ExperimentConfiguration,
+    IndividualExperiment,
+)
+
+from superresassess.configurations_io import (
+    read_yaml_as_configuration,
 )
 
 CONTENT = """
@@ -49,7 +53,7 @@ def temp_experiment_directory(tmp_path):
 
 
 def test_yaml_reading(temp_yaml):
-    experiment_dict = _read_yaml_as_experiment_configuration(temp_yaml)
+    experiment_dict = read_yaml_as_configuration(temp_yaml, ExperimentConfiguration)
     assert experiment_dict.initial_seed == 2024
 
 
@@ -72,8 +76,8 @@ def test_iterations_seeding(temp_yaml_iterations, temp_experiment_directory):
     """Test whether the function creates repeated experiments with different
     seeds."""
     setup_experiments(temp_yaml_iterations, temp_experiment_directory)
-    experiment_3_dict = read_yaml_as_individual_experiment(
-        temp_experiment_directory / "00003.yaml"
+    experiment_3_dict = read_yaml_as_configuration(
+        temp_experiment_directory / "00003.yaml", IndividualExperiment
     )
     assert experiment_3_dict.seed == 2026  # 2024 + 2
 
@@ -81,14 +85,14 @@ def test_iterations_seeding(temp_yaml_iterations, temp_experiment_directory):
 def test_assessment_methods(temp_yaml_iterations, temp_experiment_directory):
     """Test whether all assessment methods are where they need to be."""
     setup_experiments(temp_yaml_iterations, temp_experiment_directory)
-    experiment_1_dict = read_yaml_as_individual_experiment(
-        temp_experiment_directory / "00001.yaml"
+    experiment_1_dict = read_yaml_as_configuration(
+        temp_experiment_directory / "00001.yaml", IndividualExperiment
     )
-    experiment_5_dict = read_yaml_as_individual_experiment(
-        temp_experiment_directory / "00005.yaml"
+    experiment_5_dict = read_yaml_as_configuration(
+        temp_experiment_directory / "00005.yaml", IndividualExperiment
     )
-    experiment_7_dict = read_yaml_as_individual_experiment(
-        temp_experiment_directory / "00007.yaml"
+    experiment_7_dict = read_yaml_as_configuration(
+        temp_experiment_directory / "00007.yaml", IndividualExperiment
     )
 
     # the first one should be three way holdout
