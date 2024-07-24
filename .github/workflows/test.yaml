@@ -27,4 +27,4 @@ jobs:
           poetry install --no-root
       - name: Run the automated tests
         run: |
-          poetry run pytest -vv --disable-warnings
+          poetry run pytest -vv --disable-warnings -m "not s3"
