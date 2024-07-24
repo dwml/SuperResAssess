@@ -1,4 +1,4 @@
-from superresassess.model import ReCNN
+from superresassess.model import ReCNN, ReCNNConfiguration
 from tests.utils import try_script_save
 import pytest
 import torch
@@ -23,9 +23,25 @@ CASES_3D = [
 ]
 
 
+class TestReCNNConfig:
+    config = CASES_3D[0][0]
+
+    def test_config(self) -> None:
+        config_object = ReCNNConfiguration(**self.config)
+        assert dict(config_object) == self.config
+
+    def test_model_initialization(self) -> None:
+        config_object = ReCNNConfiguration(**self.config)
+        _ = ReCNN(config_object)
+
+    def test_incorrect_config(self) -> None:
+        del self.config["out_channels"]
+        with pytest.raises(Exception):
+            _ = ReCNNConfiguration(**self.config)
+
+
 @pytest.mark.slow
 class TestReCNN:
-
     @pytest.mark.parametrize("params, input_shape, expected_shape", CASES_3D)
     def test_shape(self, params, input_shape, expected_shape):
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -33,7 +49,7 @@ class TestReCNN:
         net = ReCNN(**params).to(device)
         with eval_mode(net):
             result = net(torch.randn(input_shape).to(device))
-        assert all([a == b for a, b in zip(result.shape, expected_shape)])
+        assert all(result.shape == expected_shape)
 
     def test_script(self):
         net = ReCNN(
