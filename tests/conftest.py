@@ -5,13 +5,11 @@ import numpy as np
 
 
 @pytest.fixture(scope="session")
-def mock_data(tmp_path) -> list[dict[[str], Path]]:
+def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
     """Create 10 hr/lr pairs"""
     # Setup path
-    hr_path = tmp_path.joinpath("hr")
-    hr_path.mkdir()
-    lr_path = tmp_path.joinpath("lr")
-    lr_path.mkdir()
+    hr_path = Path(tmpdir_factory.mktemp("hr"))
+    lr_path = Path(tmpdir_factory.mktemp("lr"))
 
     hr_list = []
     lr_list = []
