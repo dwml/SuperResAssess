@@ -1,6 +1,7 @@
 from typing import Callable
 
 from pydantic import BaseModel
+
 import torch
 import torch.nn as nn
 
@@ -71,7 +72,7 @@ class ReCNN(nn.Module):
 class LitReCNN(L.LightningModule):
     def __init__(self, configuration: ReCNNConfiguration):
         super().__init__()
-        self.model = ReCNN(ReCNNConfiguration)
+        self.model = ReCNN(configuration)
         self.loss = torch.nn.MSELoss()
 
     def training_step(self, batch, batch_idx):
