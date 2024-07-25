@@ -2,6 +2,8 @@ from pathlib import Path
 import pytest
 import nibabel as nib
 import numpy as np
+from lightning import LightningModule
+from superresassess.model import LitReCNN, ReCNNConfiguration
 
 
 @pytest.fixture(scope="session")
@@ -28,3 +30,22 @@ def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
         lr_list.append(lr_filename)
 
     return [{"img": image, "lab": label} for image, label in zip(lr_list, hr_list)]
+
+
+@pytest.fixture(scope="session")
+def mock_recnn_config() -> ReCNNConfiguration:
+    return ReCNNConfiguration(
+        n_layers=10,
+        spatial_dims=3,
+        in_channels=1,
+        intermediate_channels=4,
+        out_channels=1,
+        kernel_size=3,
+        stride=1,
+        padding="same",
+    )
+
+
+@pytest.fixture(scope="session")
+def mock_model(mock_recnn_config) -> LightningModule:
+    return LitReCNN(configuration=mock_recnn_config)
