@@ -40,11 +40,6 @@ class Validation:
         self.train_data = train_data
         self.val_data = val_data
         self.max_epochs = validation_config.max_epochs
-        self.train_cropper = RandSpatialCropSamplesd(
-            validation_config.dict_keys,
-            validation_config.train_roi_size,
-            validation_config.samples_per_image,
-        )
         self.validation_config = validation_config
         self.instantiated_model: Optional[LightningModule] = None
 
@@ -60,6 +55,11 @@ class Validation:
 
     def _setup(self) -> None:
         seed_everything(self.seed)
+        self.train_cropper = RandSpatialCropSamplesd(
+            self.validation_config.dict_keys,
+            self.validation_config.train_roi_size,
+            self.validation_config.samples_per_image,
+        )
         self.instantiated_model = self.model(self.model_config)
         loader = get_image_loader(dict_keys=self.validation_config.dict_keys)
         train_images = Dataset(self.train_data, transform=loader)
@@ -105,5 +105,7 @@ class Validation:
             train_dataloaders=self.train_loader,
             val_dataloaders=self.val_loader,
         )
+
+        print(trainer.checkpoint_callback.best_model_score)
 
         self.best_validation_loss = trainer.checkpoint_callback.best_model_score
