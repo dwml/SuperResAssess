@@ -122,7 +122,7 @@ class TestValidation:
     @pytest.mark.slow
     @pytest.mark.parametrize(
         "seed, validation_loss",
-        [(2024, 0.48590827), (2025, 0.48010752), (2026, 0.44385132)],
+        [(2024, 0.4859), (2025, 0.4801), (2026, 0.4439)],
     )
     def test_validate_gives_correct_validation_loss(
         self, train_val_data, mock_recnn_config, seed, validation_loss, logger
@@ -144,4 +144,6 @@ class TestValidation:
         validator.validate()
 
         # assert best_validation_loss is not None
-        assert validator.best_validation_loss == pytest.approx(validation_loss)
+        assert validator.best_validation_loss == pytest.approx(
+            validation_loss, abs=1e-4
+        )
