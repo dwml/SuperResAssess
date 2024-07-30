@@ -16,6 +16,7 @@ def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
     hr_list = []
     lr_list = []
     for i in range(10):
+        np.random.seed(1988)
         hr_filename = hr_path.joinpath(f"{i:0>5}.nii.gz")
         hr_image = nib.Nifti1Image(
             np.random.randint(0, 2, size=[32, 32, 32]).astype(float), np.eye(4)
