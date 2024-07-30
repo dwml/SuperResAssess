@@ -3,10 +3,11 @@ from superresassess.model import LitReCNN
 from lightning.pytorch.loggers import CSVLogger
 import yaml
 import torch
+import pytest
 
 
 class TestValidation:
-    seed = 2024
+    my_seed = 2024
 
     def test_logging(self, tmp_path, mock_data, mock_recnn_config):
         """The Validation class should log the filenames to be able to double check
@@ -22,7 +23,7 @@ class TestValidation:
             model=LitReCNN,
             config=mock_recnn_config,
             logger=logger,
-            seed=self.seed,
+            seed=self.my_seed,
             train_data=mock_data[:train_length],
             val_data=mock_data[train_length : train_length + val_length],
         )
@@ -39,8 +40,9 @@ class TestValidation:
             str(datum) for datum in mock_data[train_length : train_length + val_length]
         ]
 
+    @pytest.mark.parametrize("seed", [2024, 2025, 2026])
     def test_model_initialization_is_deterministic(
-        self, tmp_path, mock_data, mock_recnn_config
+        self, tmp_path, mock_data, mock_recnn_config, seed
     ):
         # setup data and logger
         train_val_test_split = (0.6, 0.2, 0.2)
@@ -54,7 +56,7 @@ class TestValidation:
             model=LitReCNN,
             config=mock_recnn_config,
             logger=logger,
-            seed=self.seed,
+            seed=seed,
             train_data=mock_data[:train_length],
             val_data=mock_data[train_length : train_length + val_length],
         )
@@ -63,7 +65,7 @@ class TestValidation:
             model=LitReCNN,
             config=mock_recnn_config,
             logger=logger,
-            seed=self.seed,
+            seed=seed,
             train_data=mock_data[:train_length],
             val_data=mock_data[train_length : train_length + val_length],
         )
