@@ -54,7 +54,7 @@ class Validation:
         self.logger.finalize("success")
 
     def _setup(self) -> None:
-        seed_everything(self.seed)
+        seed_everything(self.seed, workers=True)
         self.train_cropper = RandSpatialCropSamplesd(
             self.validation_config.dict_keys,
             self.validation_config.train_roi_size,
@@ -106,6 +106,4 @@ class Validation:
             val_dataloaders=self.val_loader,
         )
 
-        print(trainer.checkpoint_callback.best_model_score)
-
-        self.best_validation_loss = trainer.checkpoint_callback.best_model_score
+        self.best_validation_loss = trainer.early_stopping_callback.best_score
