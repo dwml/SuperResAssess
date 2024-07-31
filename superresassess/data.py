@@ -1,6 +1,14 @@
 from pathlib import Path
 from typing import Optional, List, Union
 import boto3
+import monai
+from monai.transforms import (
+    Transform,
+    Compose,
+    LoadImaged,
+    EnsureChannelFirstd,
+    ToTensord,
+)
 
 
 class HCP_T2W:
@@ -46,3 +54,18 @@ class HCP_T2W:
                     str(file_path),  # endpoint must be converted to str
                     full_target_path.joinpath(file_name),
                 )
+
+
+def get_image_loader(dict_keys: tuple[str, ...]) -> Transform:
+    return Compose(
+        [LoadImaged(dict_keys), EnsureChannelFirstd(dict_keys), ToTensord(dict_keys)]
+    )
+
+
+class ImageDatasetd(monai.data.Dataset):
+    """Modification of a dataset that reads all images from disk before usage."""
+
+    def __init__(
+        self, img_paths: list[dict[str, str]], img_transform: Transform
+    ) -> None:
+        super().__init__(data=img_transform(img_paths))
