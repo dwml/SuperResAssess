@@ -52,6 +52,7 @@ class TestValidation:
             mock_data[train_length : train_length + val_length],
         )
 
+    @pytest.mark.slow
     def test_logging(self, tmp_path, train_val_data, mock_recnn_config, logger):
         """The Validation class should log the filenames to be able to double check
         that the correct files were used."""
