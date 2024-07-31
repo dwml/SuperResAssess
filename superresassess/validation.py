@@ -106,4 +106,5 @@ class Validation:
             val_dataloaders=self.val_loader,
         )
 
-        self.best_validation_loss = trainer.early_stopping_callback.best_score
+        self.best_validation_loss = trainer.checkpoint_callback.best_model_score
+        self.best_model_path = Path(trainer.checkpoint_callback.best_model_path)

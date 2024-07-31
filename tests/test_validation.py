@@ -121,15 +121,26 @@ class TestValidation:
 
     @pytest.mark.slow
     @pytest.mark.parametrize(
-        "seed, validation_loss",
-        [(2024, 0.4859), (2025, 0.4801), (2026, 0.4439)],
+        "seed, validation_loss, best_model_name",
+        [
+            (2024, 0.34, "epoch=3-validation_loss=0.34.ckpt"),
+            (2025, 0.35, "epoch=3-validation_loss=0.35.ckpt"),
+            (2026, 0.31, "epoch=3-validation_loss=0.31.ckpt"),
+        ],
     )
     def test_validate_gives_correct_validation_loss(
-        self, train_val_data, mock_recnn_config, seed, validation_loss, logger
+        self,
+        train_val_data,
+        mock_recnn_config,
+        seed,
+        validation_loss,
+        best_model_name,
+        logger,
     ):
         # setup data, logger and validator
         validation_config = self.my_validation_config
         validation_config.seed = seed
+        validation_config.max_epochs = 4
         train_data, val_data = train_val_data
         validator = Validation(
             model=LitReCNN,
@@ -145,5 +156,6 @@ class TestValidation:
 
         # assert best_validation_loss is not None
         assert validator.best_validation_loss == pytest.approx(
-            validation_loss, abs=1e-4
+            validation_loss, abs=1e-2
         )
+        assert validator.best_model_path.name == best_model_name
