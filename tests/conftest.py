@@ -16,17 +16,14 @@ def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
     hr_list = []
     lr_list = []
     for i in range(10):
-        np.random.seed(1988)
+        sg = np.random.SeedSequence(1988)
+        rng = np.random.Generator(np.random.MT19937(sg))
         hr_filename = hr_path.joinpath(f"{i:0>5}.nii.gz")
-        hr_image = nib.Nifti1Image(
-            np.random.randint(0, 2, size=[32, 32, 32]).astype(float), np.eye(4)
-        )
+        hr_image = nib.Nifti1Image(rng.random(size=[32, 32, 32]), np.eye(4))
         nib.save(hr_image, hr_filename)
         hr_list.append(hr_filename)
         lr_filename = lr_path.joinpath(f"{i:0>5}.nii.gz")
-        lr_image = nib.Nifti1Image(
-            np.random.randint(0, 2, size=[32, 32, 32]).astype(float), np.eye(4)
-        )
+        lr_image = nib.Nifti1Image(rng.random(size=[32, 32, 32]), np.eye(4))
         nib.save(lr_image, lr_filename)
         lr_list.append(lr_filename)
 
