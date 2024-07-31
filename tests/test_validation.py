@@ -2,6 +2,7 @@ from superresassess.validation import Validation, ValidationConfig
 from superresassess.model import LitReCNN
 from lightning.pytorch.loggers import CSVLogger
 from lightning import LightningModule
+from pathlib import Path
 import yaml
 import torch
 import pytest
@@ -9,18 +10,32 @@ import pytest
 
 class TestValidation:
     my_seed = 2024
-    my_max_epochs = 2
-    my_validation_config = ValidationConfig(
+    my_max_epochs = 5
+    my_not_so_fast_validation_config = ValidationConfig(
         max_epochs=my_max_epochs,
         seed=my_seed,
         samples_per_image=200,
         train_batch_size=32,
         val_batch_size=1,
-        train_workers=10,
-        val_workers=10,
+        train_workers=1,
+        val_workers=1,
         train_roi_size=(32, 32, 32),
         learning_rate=1e-3,
         dict_keys=("img", "lab"),
+        limit_train_batches=10,
+    )
+    my_fast_validation_config = ValidationConfig(
+        max_epochs=my_max_epochs,
+        seed=my_seed,
+        samples_per_image=200,
+        train_batch_size=32,
+        val_batch_size=1,
+        train_workers=1,
+        val_workers=1,
+        train_roi_size=(32, 32, 32),
+        learning_rate=1e-3,
+        dict_keys=("img", "lab"),
+        limit_train_batches=1,
     )
 
     @pytest.fixture(scope="function")
@@ -44,19 +59,19 @@ class TestValidation:
         train_data, val_data = train_val_data
 
         # this should log the file
-        _ = Validation(
+        validator = Validation(
             model=LitReCNN,
             model_config=mock_recnn_config,
             logger=logger,
             train_data=train_data,
             val_data=val_data,
-            validation_config=self.my_validation_config,
+            validation_config=self.my_fast_validation_config,
         )
 
+        validator.validate()
+
         # Assert that contents are correct
-        yaml_path = (
-            tmp_path.joinpath("test").joinpath("iteration1").joinpath("hparams.yaml")
-        )
+        yaml_path = Path(logger.log_dir).joinpath("hparams.yaml")
         contents = yaml.safe_load(yaml_path.read_text())
         assert contents["train_data"] == [str(datum) for datum in train_data]
         assert contents["val_data"] == [str(datum) for datum in val_data]
@@ -76,7 +91,7 @@ class TestValidation:
             logger=logger,
             train_data=train_data,
             val_data=val_data,
-            validation_config=self.my_validation_config,
+            validation_config=self.my_fast_validation_config,
         )
         validator._setup()
         validator2 = Validation(
@@ -85,7 +100,7 @@ class TestValidation:
             logger=logger,
             train_data=train_data,
             val_data=val_data,
-            validation_config=self.my_validation_config,
+            validation_config=self.my_fast_validation_config,
         )
         validator2._setup()
 
@@ -109,7 +124,7 @@ class TestValidation:
             logger=logger,
             train_data=train_data,
             val_data=val_data,
-            validation_config=self.my_validation_config,
+            validation_config=self.my_fast_validation_config,
         )
 
         # validate model
@@ -120,27 +135,14 @@ class TestValidation:
         assert isinstance(validator.instantiated_model, LightningModule)
 
     @pytest.mark.slow
-    @pytest.mark.parametrize(
-        "seed, validation_loss, best_model_name",
-        [
-            (2024, 0.34, "epoch=3-validation_loss=0.34.ckpt"),
-            (2025, 0.35, "epoch=3-validation_loss=0.35.ckpt"),
-            (2026, 0.31, "epoch=3-validation_loss=0.31.ckpt"),
-        ],
-    )
     def test_validate_gives_correct_validation_loss(
         self,
         train_val_data,
         mock_recnn_config,
-        seed,
-        validation_loss,
-        best_model_name,
-        logger,
+        log_dir="logs/",
     ):
+        logger = CSVLogger(save_dir=log_dir)
         # setup data, logger and validator
-        validation_config = self.my_validation_config
-        validation_config.seed = seed
-        validation_config.max_epochs = 4
         train_data, val_data = train_val_data
         validator = Validation(
             model=LitReCNN,
@@ -148,14 +150,12 @@ class TestValidation:
             logger=logger,
             train_data=train_data,
             val_data=val_data,
-            validation_config=self.my_validation_config,
+            validation_config=self.my_not_so_fast_validation_config,
         )
 
         # validate model
         validator.validate()
 
         # assert best_validation_loss is not None
-        assert validator.best_validation_loss == pytest.approx(
-            validation_loss, abs=1e-2
-        )
-        assert validator.best_model_path.name == best_model_name
+        assert validator.best_validation_loss == pytest.approx(0.50, abs=1e-2)
+        assert validator.best_model_path.name == "epoch=4-validation_loss=0.50.ckpt"

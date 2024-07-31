@@ -21,6 +21,7 @@ class ValidationConfig(BaseModel):
     max_epochs: int
     learning_rate: float
     dict_keys: tuple[str, str]
+    limit_train_batches: int
 
 
 class Validation:
@@ -44,14 +45,6 @@ class Validation:
         self.instantiated_model: Optional[LightningModule] = None
 
         # Log training data
-        self.logger.log_hyperparams(
-            {
-                "train_data": [str(datum) for datum in self.train_data],
-                "val_data": [str(datum) for datum in self.val_data],
-            }
-        )
-        self.logger.log_metrics({"test": 0.01})
-        self.logger.finalize("success")
 
     def _setup(self) -> None:
         seed_everything(self.seed, workers=True)
@@ -89,6 +82,7 @@ class Validation:
             max_epochs=self.max_epochs,
             logger=self.logger,
             deterministic=True,
+            limit_train_batches=self.validation_config.limit_train_batches,
             callbacks=[
                 EarlyStopping(monitor="validation_loss", mode="min", patience=15),
                 ModelCheckpoint(
@@ -99,6 +93,12 @@ class Validation:
                     mode="min",
                 ),
             ],
+        )
+        trainer.logger.log_hyperparams(
+            {
+                "train_data": [str(datum) for datum in self.train_data],
+                "val_data": [str(datum) for datum in self.val_data],
+            }
         )
         trainer.fit(
             self.instantiated_model,
