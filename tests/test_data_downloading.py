@@ -44,12 +44,14 @@ def test_image_list(tmpdir, image_list):
 
 
 @pytest.mark.s3
+@pytest.mark.slow
 def test_download_one_image(tmpdir, first_image_list):
     _ = HCP_T2W(tmpdir, first_image_list, download=True)
     assert tmpdir.join(IMAGE_FIRST).exists()
 
 
 @pytest.mark.s3
+@pytest.mark.slow
 def test_download_list_images(tmpdir):
     _ = HCP_T2W(tmpdir, [IMAGE_500, IMAGE_LAST], download=True)
     assert tmpdir.join(IMAGE_500).exists()

@@ -57,8 +57,8 @@ class TestReCNNConfig:
             _ = ReCNNConfiguration(**self.incorrect_config)
 
 
-@pytest.mark.slow
 class TestReCNN:
+    @pytest.mark.slow
     @pytest.mark.parametrize("params, input_shape, expected_shape", CASES_3D)
     def test_shape(self, params, input_shape, expected_shape):
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -68,6 +68,7 @@ class TestReCNN:
             result = net(torch.randn(input_shape).to(device))
         assert result.shape == expected_shape
 
+    @pytest.mark.slow
     def test_script(self):
         config = ReCNNConfiguration(
             n_layers=10,
