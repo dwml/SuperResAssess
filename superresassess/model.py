@@ -95,6 +95,16 @@ class LitReCNN(L.LightningModule):
         self.log("validation_loss", loss, sync_dist=True)
         return loss
 
+    def test_step(self, batch, batch_idx):
+        # batch_idx is needed for lighting
+        # name it here to avoid linting errors
+        _ = batch_idx
+        x, y = batch["img"], batch["lab"]
+        y_hat = self.model(x)
+        loss = self.loss(y_hat, y)
+        self.log("test_loss", loss, sync_dist=True)
+        return loss
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
