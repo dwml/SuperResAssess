@@ -110,17 +110,24 @@ class Validation:
         self.best_model_path = Path(self.trainer.checkpoint_callback.best_model_path)
 
     def test(
-        self, test_data: list[dict[[str], Path]], batch_size: int, num_workers: int
-    ) -> Mapping[str, float]:
+        self,
+        internal_test_data: list[dict[[str], Path]],
+        external_test_data: list[dict[[str], Path]],
+        batch_size: int,
+        num_workers: int,
+    ) -> list[Mapping[str, float]]:
         """Test method from the trainer returns a list of mappings between strings and
-        floats, here we assume only one dataloader is used, so we return the first
-        element."""
-        test_images = Dataset(test_data, transform=self.loader)
-        test_loader = DataLoader(test_images, batch_size=batch_size)
+        floats, here we assume that two dataloaders are used, one internal test set and
+        one external test set. The testing value is list of dicts that map the name of
+        the loss to its value."""
+        internal_test_images = Dataset(internal_test_data, transform=self.loader)
+        internal_test_loader = DataLoader(internal_test_images, batch_size=batch_size)
+        external_test_images = Dataset(external_test_data, transform=self.loader)
+        external_test_loader = DataLoader(external_test_images, batch_size=batch_size)
         testing_values = self.trainer.test(
             model=self.model.load_from_checkpoint(
                 self.best_model_path, configuration=self.model_config
             ),
-            dataloaders=test_loader,
+            dataloaders=[internal_test_loader, external_test_loader],
         )
-        return testing_values[0]
+        return testing_values
