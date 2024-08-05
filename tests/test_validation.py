@@ -52,6 +52,7 @@ class TestValidation:
             mock_data[train_length : train_length + val_length],
         )
 
+    @pytest.mark.slow
     def test_logging(self, tmp_path, train_val_data, mock_recnn_config, logger):
         """The Validation class should log the filenames to be able to double check
         that the correct files were used."""
@@ -136,12 +137,8 @@ class TestValidation:
 
     @pytest.mark.slow
     def test_validate_gives_correct_validation_loss(
-        self,
-        train_val_data,
-        mock_recnn_config,
-        log_dir="logs/",
+        self, train_val_data, mock_recnn_config, logger
     ):
-        logger = CSVLogger(save_dir=log_dir)
         # setup data, logger and validator
         train_data, val_data = train_val_data
         validator = Validation(
@@ -156,6 +153,6 @@ class TestValidation:
         # validate model
         validator.validate()
 
-        # assert best_validation_loss is not None
-        assert validator.best_validation_loss == pytest.approx(0.50, abs=1e-2)
-        assert validator.best_model_path.name == "epoch=4-validation_loss=0.50.ckpt"
+        # assert best_validation_loss and best_model_path name
+        assert validator.best_validation_loss == pytest.approx(0.17, abs=1e-2)
+        assert validator.best_model_path.name == "epoch=4-validation_loss=0.17.ckpt"

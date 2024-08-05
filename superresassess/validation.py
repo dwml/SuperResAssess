@@ -4,7 +4,7 @@ from lightning import LightningModule, seed_everything, Trainer
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from superresassess.model import ReCNNConfiguration
 from superresassess.data import get_image_loader
-from typing import Optional
+from typing import Optional, Mapping
 from pydantic import BaseModel
 from monai.data import DataLoader, PatchDataset, Dataset
 from monai.transforms import RandSpatialCropSamplesd
@@ -21,7 +21,7 @@ class ValidationConfig(BaseModel):
     max_epochs: int
     learning_rate: float
     dict_keys: tuple[str, str]
-    limit_train_batches: int
+    limit_train_batches: Optional[int | float] = 1.0
 
 
 class Validation:
@@ -54,8 +54,8 @@ class Validation:
             self.validation_config.samples_per_image,
         )
         self.instantiated_model = self.model(self.model_config)
-        loader = get_image_loader(dict_keys=self.validation_config.dict_keys)
-        train_images = Dataset(self.train_data, transform=loader)
+        self.loader = get_image_loader(dict_keys=self.validation_config.dict_keys)
+        train_images = Dataset(self.train_data, transform=self.loader)
         train_patches = PatchDataset(
             train_images,
             patch_func=self.train_cropper,
@@ -63,7 +63,7 @@ class Validation:
         )
         val_images = Dataset(
             self.val_data,
-            transform=loader,
+            transform=self.loader,
         )
         self.train_loader = DataLoader(
             train_patches,
@@ -78,7 +78,7 @@ class Validation:
 
     def validate(self) -> None:
         self._setup()
-        trainer = Trainer(
+        self.trainer = Trainer(
             max_epochs=self.max_epochs,
             logger=self.logger,
             deterministic=True,
@@ -94,17 +94,40 @@ class Validation:
                 ),
             ],
         )
-        trainer.logger.log_hyperparams(
+        self.trainer.logger.log_hyperparams(
             {
                 "train_data": [str(datum) for datum in self.train_data],
                 "val_data": [str(datum) for datum in self.val_data],
             }
         )
-        trainer.fit(
+        self.trainer.fit(
             self.instantiated_model,
             train_dataloaders=self.train_loader,
             val_dataloaders=self.val_loader,
         )
 
-        self.best_validation_loss = trainer.checkpoint_callback.best_model_score
-        self.best_model_path = Path(trainer.checkpoint_callback.best_model_path)
+        self.best_validation_loss = self.trainer.checkpoint_callback.best_model_score
+        self.best_model_path = Path(self.trainer.checkpoint_callback.best_model_path)
+
+    def test(
+        self,
+        internal_test_data: list[dict[[str], Path]],
+        external_test_data: list[dict[[str], Path]],
+        batch_size: int,
+        num_workers: int,
+    ) -> list[Mapping[str, float]]:
+        """Test method from the trainer returns a list of mappings between strings and
+        floats, here we assume that two dataloaders are used, one internal test set and
+        one external test set. The testing value is list of dicts that map the name of
+        the loss to its value."""
+        internal_test_images = Dataset(internal_test_data, transform=self.loader)
+        internal_test_loader = DataLoader(internal_test_images, batch_size=batch_size)
+        external_test_images = Dataset(external_test_data, transform=self.loader)
+        external_test_loader = DataLoader(external_test_images, batch_size=batch_size)
+        testing_values = self.trainer.test(
+            model=self.model.load_from_checkpoint(
+                self.best_model_path, configuration=self.model_config
+            ),
+            dataloaders=[internal_test_loader, external_test_loader],
+        )
+        return testing_values

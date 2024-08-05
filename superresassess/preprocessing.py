@@ -71,6 +71,7 @@ class PrepareHRLRData:
 
     def prepare_data(self, file_ending: str, raw_path: Path, processed_path: Path):
         files = list(raw_path.glob(f"**/*{file_ending}"))
+        print(files)
         hr_path = processed_path.joinpath("hr")
         hr_path.mkdir(parents=True, exist_ok=True)
         lr_path = processed_path.joinpath("lr")
@@ -88,11 +89,11 @@ class PrepareHRLRData:
         )
 
         ds = monai.data.ArrayDataset(files, self.preprocessing_loader)
-        loader = torch.utils.data.DataLoader(ds, batch_size=1)
+        loader = torch.utils.data.DataLoader(ds, batch_size=None)
 
-        im = monai.utils.first(loader)
-        hr_pixdim = im.pixdim
-        lr_pixdim = tuple([dim * self.scale for dim in hr_pixdim])
+        img = monai.utils.first(loader)
+        hr_pixdim = img.pixdim
+        lr_pixdim = [dim * self.scale for dim in hr_pixdim]
 
         downsampler = _get_downsampler(self.sigma, lr_pixdim)
         matcher = monai.transforms.ResampleToMatch(mode="bilinear")
