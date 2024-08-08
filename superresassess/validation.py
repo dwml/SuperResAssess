@@ -1,13 +1,16 @@
 from pathlib import Path
-from lightning.pytorch.loggers import Logger
-from lightning import LightningModule, seed_everything, Trainer
+from typing import Mapping, Optional
+import os
+
+from lightning import LightningModule, Trainer, seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from superresassess.model import ReCNNConfiguration
-from superresassess.data import get_image_loader
-from typing import Optional, Mapping
-from pydantic import BaseModel
-from monai.data import DataLoader, PatchDataset, Dataset
+from lightning.pytorch.loggers import Logger
+from monai.data import DataLoader, Dataset, PatchDataset
 from monai.transforms import RandSpatialCropSamplesd
+from pydantic import BaseModel
+
+from superresassess.data import get_image_loader
+from superresassess.model import ReCNNConfiguration
 
 
 class ValidationConfig(BaseModel):
@@ -31,8 +34,8 @@ class Validation:
         model_config: ReCNNConfiguration,
         logger: Logger,
         train_data: list[dict[[str], Path]],
-        val_data: list[dict[[str], Path]],
         validation_config: ValidationConfig,
+        val_data: list[dict[[str], Path]] = None,
     ):
         self.model = model
         self.model_config = model_config
@@ -61,20 +64,38 @@ class Validation:
             patch_func=self.train_cropper,
             samples_per_image=self.validation_config.samples_per_image,
         )
-        val_images = Dataset(
-            self.val_data,
-            transform=self.loader,
-        )
         self.train_loader = DataLoader(
             train_patches,
             batch_size=self.validation_config.train_batch_size,
             num_workers=self.validation_config.train_workers,
         )
-        self.val_loader = DataLoader(
-            val_images,
-            batch_size=self.validation_config.val_batch_size,
-            num_workers=self.validation_config.val_workers,
+        if self.val_data:
+            val_images = Dataset(
+                self.val_data,
+                transform=self.loader,
+            )
+            self.val_loader = DataLoader(
+                val_images,
+                batch_size=self.validation_config.val_batch_size,
+                num_workers=self.validation_config.val_workers,
+            )
+
+    def train(self, max_epochs: int) -> None:
+        self._setup()
+        self.trainer = Trainer(
+            max_epochs=max_epochs,
+            logger=self.logger,
+            deterministic=True,
+            limit_train_batches=self.validation_config.limit_train_batches,
         )
+        self.trainer.logger.log_hyperparams(
+            {"train_data": [str(datum) for datum in self.train_data]}
+        )
+        self.trainer.fit(self.instantiated_model, self.train_loader)
+
+        self.best_model_path = os.path.join(self.logger.log_dir, "retrained_model.pt")
+
+        self.trainer.save_checkpoint(self.best_model_path)
 
     def validate(self) -> None:
         self._setup()
@@ -111,23 +132,30 @@ class Validation:
 
     def test(
         self,
-        internal_test_data: list[dict[[str], Path]],
         external_test_data: list[dict[[str], Path]],
         batch_size: int,
         num_workers: int,
+        internal_test_data: list[dict[[str], Path]] = None,
     ) -> list[Mapping[str, float]]:
         """Test method from the trainer returns a list of mappings between strings and
         floats, here we assume that two dataloaders are used, one internal test set and
         one external test set. The testing value is list of dicts that map the name of
         the loss to its value."""
-        internal_test_images = Dataset(internal_test_data, transform=self.loader)
-        internal_test_loader = DataLoader(internal_test_images, batch_size=batch_size)
         external_test_images = Dataset(external_test_data, transform=self.loader)
         external_test_loader = DataLoader(external_test_images, batch_size=batch_size)
+
+        dataloaders = [external_test_loader]
+        if internal_test_data:
+            internal_test_images = Dataset(internal_test_data, transform=self.loader)
+            internal_test_loader = DataLoader(
+                internal_test_images, batch_size=batch_size
+            )
+            dataloaders = [internal_test_loader, external_test_loader]
+
         testing_values = self.trainer.test(
             model=self.model.load_from_checkpoint(
                 self.best_model_path, configuration=self.model_config
             ),
-            dataloaders=[internal_test_loader, external_test_loader],
+            dataloaders=dataloaders,
         )
         return testing_values
