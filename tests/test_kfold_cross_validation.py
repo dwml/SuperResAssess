@@ -1,4 +1,5 @@
 import os
+from threading import local
 
 import pytest
 
@@ -32,8 +33,6 @@ def assessment_config(tmp_path):
         train_val_test_ratio=(0.6, 0.2, 0.2),
         log_path=tmp_path,
         data_config=DATA_CONFIG,
-        test_batch_size=1,
-        test_workers=127,
         n_internal_images=N_INTERNAL_IMAGES,
         experiment_id="00001",
     )
@@ -84,8 +83,10 @@ class TestKFoldCrossValidation:
         # individually to each GPU. The downside is that the processes continue
         # executing the code. The process with local rank 0 is the main process, that
         # is way we exit all processes that do not have local rank 0
-        if int(os.environ["LOCAL_RANK"]) > 0:
-            pytest.exit("Not main process, exiting...")
+        local_rank_key = "LOCAL_RANK"
+        if local_rank_key in os.environ.keys():
+            if int(os.environ[local_rank_key]) > 0:
+                pytest.exit("Not main process, exiting...")
 
         assert (
             experiment_log_path.joinpath("assessment0")
