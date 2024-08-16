@@ -1,9 +1,12 @@
 from pathlib import Path
+from typing import TypeVar
 from pydantic import BaseModel
 import yaml
 
+Config = TypeVar(name="Config", bound=BaseModel)
 
-def read_yaml_as_configuration(yaml_file: Path, configuration: BaseModel) -> BaseModel:
+
+def read_yaml_as_configuration(yaml_file: Path, configuration: type[Config]) -> Config:
     with open(yaml_file, "r") as stream:
         config = yaml.safe_load(stream)
     return configuration(**config)
