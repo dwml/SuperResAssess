@@ -80,7 +80,6 @@ class ImageDatasetd(Dataset):
 
 @dataclass
 class DataConfig:
-    seed: int
     samples_per_image: int
     train_batch_size: int
     val_batch_size: int

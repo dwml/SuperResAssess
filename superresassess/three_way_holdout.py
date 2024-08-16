@@ -3,7 +3,7 @@ from pathlib import Path
 from lightning import Trainer
 from lightning.pytorch.loggers import CSVLogger
 
-from superresassess.assessment_base import AssessmentMethod
+from superresassess.assessment.base import AssessmentMethod
 from superresassess.data import _setup_seeded_dataloader
 from superresassess.model import _setup_seeded_model
 
@@ -32,34 +32,34 @@ class ThreeWayHoldout(AssessmentMethod):
     def assess(self) -> None:
         trainer = Trainer(
             logger=CSVLogger(
-                self.assessment_config.log_path,
-                self.assessment_config.experiment_id,
+                self.experiment_config.log_path,
+                self.experiment_config.experiment_id,
                 version="assessment",
             ),
-            max_epochs=self.assessment_config.data_config.max_epochs,
-            limit_train_batches=self.assessment_config.data_config.limit_train_batches,
+            max_epochs=self.experiment_config.data_config.max_epochs,
+            limit_train_batches=self.experiment_config.data_config.limit_train_batches,
         )
         instantiated_model = _setup_seeded_model(
             self.lightning_module_type,
             self.lightning_module_config,
-            self.assessment_config.data_config.seed,
+            self.experiment_config.seed,
         )
         train_loader = _setup_seeded_dataloader(
             self._train_data,
-            self.assessment_config.data_config.seed,
-            self.assessment_config.data_config.dict_keys,
-            self.assessment_config.data_config.train_batch_size,
-            self.assessment_config.data_config.train_workers,
+            self.experiment_config.seed,
+            self.experiment_config.data_config.dict_keys,
+            self.experiment_config.data_config.train_batch_size,
+            self.experiment_config.data_config.train_workers,
             random_cropping=True,
-            cropping_size=self.assessment_config.data_config.train_roi_size,
-            samples_per_image=self.assessment_config.data_config.samples_per_image,
+            cropping_size=self.experiment_config.data_config.train_roi_size,
+            samples_per_image=self.experiment_config.data_config.samples_per_image,
         )
         val_loader = _setup_seeded_dataloader(
             self._val_data,
-            self.assessment_config.data_config.seed,
-            self.assessment_config.data_config.dict_keys,
-            self.assessment_config.data_config.val_batch_size,
-            self.assessment_config.data_config.val_workers,
+            self.experiment_config.seed,
+            self.experiment_config.data_config.dict_keys,
+            self.experiment_config.data_config.val_batch_size,
+            self.experiment_config.data_config.val_workers,
         )
 
         if trainer.logger:
@@ -96,24 +96,24 @@ class ThreeWayHoldout(AssessmentMethod):
             devices=1,
             num_nodes=1,
             logger=CSVLogger(
-                self.assessment_config.log_path,
-                self.assessment_config.experiment_id,
+                self.experiment_config.log_path,
+                self.experiment_config.experiment_id,
                 version="testing",
             ),
         )
         internal_test_dataloader = _setup_seeded_dataloader(
             self._internal_test_data,
-            self.assessment_config.data_config.seed,
-            self.assessment_config.data_config.dict_keys,
-            self.assessment_config.data_config.test_batch_size,
-            self.assessment_config.data_config.test_workers,
+            self.experiment_config.seed,
+            self.experiment_config.data_config.dict_keys,
+            self.experiment_config.data_config.test_batch_size,
+            self.experiment_config.data_config.test_workers,
         )
         external_test_dataloader = _setup_seeded_dataloader(
             self._external_test_data,
-            self.assessment_config.data_config.seed,
-            self.assessment_config.data_config.dict_keys,
-            self.assessment_config.data_config.test_batch_size,
-            self.assessment_config.data_config.test_workers,
+            self.experiment_config.seed,
+            self.experiment_config.data_config.dict_keys,
+            self.experiment_config.data_config.test_batch_size,
+            self.experiment_config.data_config.test_workers,
         )
         testing_values = trainer.test(
             model=self.lightning_module_type.load_from_checkpoint(

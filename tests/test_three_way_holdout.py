@@ -20,8 +20,8 @@ class TestThreeWayHoldout(AssessmentTestSetup):
         holdout.assess()
 
         assert (
-            holdout.assessment_config.log_path.joinpath(
-                holdout.assessment_config.experiment_id
+            holdout.experiment_config.log_path.joinpath(
+                holdout.experiment_config.experiment_id
             )
             .joinpath("assessment")
             .joinpath("metrics.csv")

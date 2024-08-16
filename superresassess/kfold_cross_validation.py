@@ -7,7 +7,7 @@ import numpy as np
 from lightning import LightningModule, Trainer
 from lightning.pytorch.loggers import CSVLogger
 
-from superresassess.assessment_base import AssessmentMethod
+from superresassess.assessment.base import AssessmentMethod
 from superresassess.data import DataListType, _setup_seeded_dataloader
 from superresassess.model import _setup_seeded_model
 
@@ -130,44 +130,44 @@ class KFoldCrossValidation(AssessmentMethod):
             instantiated_model = _setup_seeded_model(
                 self.lightning_module_type,
                 self.lightning_module_config,
-                self.assessment_config.data_config.seed,
+                self.experiment_config.seed,
             )
             train_loader = _setup_seeded_dataloader(
                 current_train_set,
-                self.assessment_config.data_config.seed,
-                self.assessment_config.data_config.dict_keys,
-                self.assessment_config.data_config.train_batch_size,
-                self.assessment_config.data_config.train_workers,
+                self.experiment_config.seed,
+                self.experiment_config.data_config.dict_keys,
+                self.experiment_config.data_config.train_batch_size,
+                self.experiment_config.data_config.train_workers,
                 random_cropping=True,
-                cropping_size=self.assessment_config.data_config.train_roi_size,
-                samples_per_image=self.assessment_config.data_config.samples_per_image,
+                cropping_size=self.experiment_config.data_config.train_roi_size,
+                samples_per_image=self.experiment_config.data_config.samples_per_image,
             )
             test_loader = _setup_seeded_dataloader(
                 current_test_set,
-                self.assessment_config.data_config.seed,
-                self.assessment_config.data_config.dict_keys,
-                self.assessment_config.data_config.test_batch_size,
-                self.assessment_config.data_config.test_workers,
+                self.experiment_config.seed,
+                self.experiment_config.data_config.dict_keys,
+                self.experiment_config.data_config.test_batch_size,
+                self.experiment_config.data_config.test_workers,
             )
             _run_fold(
-                log_path=self.assessment_config.log_path,
-                experiment_id=self.assessment_config.experiment_id,
+                log_path=self.experiment_config.log_path,
+                experiment_id=self.experiment_config.experiment_id,
                 log_version=current_log_version,
                 model=instantiated_model,
                 train_loader=train_loader,
                 train_list=current_train_set,
                 test_loader=test_loader,
                 test_list=current_test_set,
-                max_epochs=self.assessment_config.data_config.max_epochs,
-                limit_train_batches=self.assessment_config.data_config.limit_train_batches,
+                max_epochs=self.experiment_config.data_config.max_epochs,
+                limit_train_batches=self.experiment_config.data_config.limit_train_batches,
             )
 
         epochs: MutableSequence[int] = []
         losses: MutableSequence[float] = []
         for log_version in log_versions:
             metrics_path = (
-                self.assessment_config.log_path
-                / self.assessment_config.experiment_id
+                self.experiment_config.log_path
+                / self.experiment_config.experiment_id
                 / log_version
                 / "metrics.csv"
             )
@@ -190,35 +190,35 @@ class KFoldCrossValidation(AssessmentMethod):
         instantiated_model = _setup_seeded_model(
             self.lightning_module_type,
             self.lightning_module_config,
-            self.assessment_config.data_config.seed,
+            self.experiment_config.seed,
         )
         train_loader = _setup_seeded_dataloader(
             train_set,
-            self.assessment_config.data_config.seed,
-            self.assessment_config.data_config.dict_keys,
-            self.assessment_config.data_config.train_batch_size,
-            self.assessment_config.data_config.train_workers,
+            self.experiment_config.seed,
+            self.experiment_config.data_config.dict_keys,
+            self.experiment_config.data_config.train_batch_size,
+            self.experiment_config.data_config.train_workers,
             random_cropping=True,
-            cropping_size=self.assessment_config.data_config.train_roi_size,
-            samples_per_image=self.assessment_config.data_config.samples_per_image,
+            cropping_size=self.experiment_config.data_config.train_roi_size,
+            samples_per_image=self.experiment_config.data_config.samples_per_image,
         )
 
         refit_trainer = Trainer(
             logger=CSVLogger(
-                self.assessment_config.log_path,
-                self.assessment_config.experiment_id,
+                self.experiment_config.log_path,
+                self.experiment_config.experiment_id,
                 version="refit",
             ),
             min_epochs=self.num_epochs_for_refit,
             max_epochs=self.num_epochs_for_refit,
-            limit_train_batches=self.assessment_config.data_config.limit_train_batches,
+            limit_train_batches=self.experiment_config.data_config.limit_train_batches,
         )
 
         refit_trainer.fit(instantiated_model, train_loader)
         if refit_trainer.is_global_zero:
             self.best_model_path = (
-                self.assessment_config.log_path.joinpath(
-                    self.assessment_config.experiment_id
+                self.experiment_config.log_path.joinpath(
+                    self.experiment_config.experiment_id
                 )
                 .joinpath("refit")
                 .joinpath("refit.pt")
@@ -230,18 +230,18 @@ class KFoldCrossValidation(AssessmentMethod):
         self._refit()
         external_test_dataloader = _setup_seeded_dataloader(
             self._external_test_data,
-            seed=self.assessment_config.data_config.seed,
-            dict_keys=self.assessment_config.data_config.dict_keys,
-            batch_size=self.assessment_config.data_config.test_batch_size,
-            num_workers=self.assessment_config.data_config.test_workers,
+            seed=self.experiment_config.seed,
+            dict_keys=self.experiment_config.data_config.dict_keys,
+            batch_size=self.experiment_config.data_config.test_batch_size,
+            num_workers=self.experiment_config.data_config.test_workers,
         )
 
         trainer = Trainer(
             devices=1,
             num_nodes=1,
             logger=CSVLogger(
-                self.assessment_config.log_path,
-                self.assessment_config.experiment_id,
+                self.experiment_config.log_path,
+                self.experiment_config.experiment_id,
                 version="testing",
             ),
         )

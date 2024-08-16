@@ -2,13 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from superresassess.assessment_base import (
-    _check_ratios_with_folds,
-    AssessmentConfig,
-    AssessmentEnum,
-    DataConfig,
-)
-from superresassess.data import ImageDatasetd, get_image_loader
+from superresassess.assessment.base import _check_ratios_with_folds
+from superresassess.assessment.enums import AssessmentEnum
+from superresassess.data import ImageDatasetd, get_image_loader, DataConfig
+from superresassess.experiments import ExperimentConfiguration
 
 from lightning import Trainer
 from lightning.pytorch.loggers import CSVLogger
@@ -68,7 +65,6 @@ class AssessmentTestSetup:
     my_experiment_id = "00001"
     my_fast_data_config = DataConfig(
         max_epochs=my_max_epochs,
-        seed=my_seed,
         samples_per_image=200,
         train_batch_size=32,
         val_batch_size=1,
@@ -83,7 +79,6 @@ class AssessmentTestSetup:
     )
     my_not_so_fast_data_config = DataConfig(
         max_epochs=my_max_epochs,
-        seed=my_seed,
         samples_per_image=200,
         train_batch_size=32,
         val_batch_size=1,
@@ -99,14 +94,14 @@ class AssessmentTestSetup:
 
     @pytest.fixture(scope="function")
     def assessment_config(self, tmp_path):
-        return AssessmentConfig(
+        return ExperimentConfiguration(
+            assessment_method=AssessmentEnum("three_way_holdout"),
             train_val_test_ratio=(0.6, 0.2, 0.2),
             log_path=tmp_path,
             data_config=self.my_not_so_fast_data_config,
-            test_batch_size=1,
-            test_workers=127,
             n_internal_images=self.my_n_internal_images,
             experiment_id="00001",
+            seed=self.my_seed,
         )
 
     @pytest.fixture(scope="function")

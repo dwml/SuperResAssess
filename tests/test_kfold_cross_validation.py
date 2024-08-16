@@ -1,16 +1,17 @@
 import os
-from threading import local
 
 import pytest
 
-from superresassess.assessment_base import AssessmentConfig
+from superresassess.assessment.enums import AssessmentEnum
+from superresassess.experiments import ExperimentConfiguration
 from superresassess.kfold_cross_validation import KFoldCrossValidation
 from superresassess.model import LitReCNN
 from superresassess.data import DataConfig
 
+N_INTERNAL_IMAGES = 20
+SEED = 2024
 DATA_CONFIG = DataConfig(
     max_epochs=2,
-    seed=2024,
     samples_per_image=200,
     train_batch_size=32,
     val_batch_size=1,
@@ -24,17 +25,17 @@ DATA_CONFIG = DataConfig(
     limit_train_batches=20,
 )
 
-N_INTERNAL_IMAGES = 20
-
 
 @pytest.fixture
 def assessment_config(tmp_path):
-    return AssessmentConfig(
+    return ExperimentConfiguration(
+        assessment_method=AssessmentEnum("k_fold_cross_validation"),
         train_val_test_ratio=(0.6, 0.2, 0.2),
         log_path=tmp_path,
         data_config=DATA_CONFIG,
         n_internal_images=N_INTERNAL_IMAGES,
         experiment_id="00001",
+        seed=SEED,
     )
 
 

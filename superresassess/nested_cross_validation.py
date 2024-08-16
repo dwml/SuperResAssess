@@ -1,4 +1,4 @@
-from superresassess.assessment_base import AssessmentMethod
+from superresassess.assessment.base import AssessmentMethod
 
 
 class NestedCrossValidation(AssessmentMethod):

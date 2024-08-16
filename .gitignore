@@ -167,4 +167,4 @@ cython_debug/
 *.nii
 
 # Ignore individual experiments
-configurations/individual_experiments/*.yaml
+configurations/experiment_configurations/*.yaml
