@@ -1,6 +1,8 @@
 import pytest
 
-from superresassess.assessment_base import DataConfig, AssessmentConfig
+from superresassess.assessment.enums import AssessmentEnum
+from superresassess.data import DataConfig
+from superresassess.experiments import ExperimentConfiguration
 from superresassess.nested_cross_validation import NestedCrossValidation
 from superresassess.model import LitReCNN
 
@@ -11,7 +13,6 @@ class TestNestedCrossValidation:
     my_n_internal_images = 20
     my_fast_data_config = DataConfig(
         max_epochs=1,
-        seed=my_seed,
         samples_per_image=200,
         train_batch_size=32,
         val_batch_size=1,
@@ -26,7 +27,6 @@ class TestNestedCrossValidation:
     )
     my_not_so_fast_data_config = DataConfig(
         max_epochs=my_max_epochs,
-        seed=my_seed,
         samples_per_image=200,
         train_batch_size=32,
         val_batch_size=1,
@@ -42,12 +42,14 @@ class TestNestedCrossValidation:
 
     @pytest.fixture
     def assessment_config(self, tmp_path):
-        return AssessmentConfig(
+        return ExperimentConfiguration(
+            assessment_method=AssessmentEnum("nested_cross_validation"),
             train_val_test_ratio=(0.6, 0.2, 0.2),
             log_path=tmp_path,
             data_config=self.my_fast_data_config,
             n_internal_images=self.my_n_internal_images,
             experiment_id="00001",
+            seed=self.my_seed,
         )
 
     @pytest.fixture

@@ -62,12 +62,18 @@ def preprocess(
 
 @app.command()
 def setup(
-    experiment_file: Path = typer.Argument(help="Yaml file"),
-    individual_experiment_folder: Path = typer.Argument(
-        help="Path to folder where individual experiments should be stored."
+    study_configuration_file: Path = typer.Argument(
+        help="A yaml file with the study configuration. For what information should be"
+        " in the configuration file, please refer to"
+        " superresassess.experiments.StudyConfiguration"
+    ),
+    experiment_folder: Path = typer.Argument(
+        help="Path to folder where experiment configurations should be stored."
+        " These experiment configurations will be according to"
+        " superresassess.experiments.ExperimentConfiguraiton"
     ),
 ):
-    setup_experiments(experiment_file, individual_experiment_folder)
+    setup_experiments(study_configuration_file, experiment_folder)
 
 
 @app.command()
