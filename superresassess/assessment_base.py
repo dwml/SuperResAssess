@@ -43,8 +43,6 @@ class AssessmentConfig(BaseModel):
     train_val_test_ratio: HoldoutProportion
     log_path: Path
     data_config: DataConfig
-    test_batch_size: int
-    test_workers: int
     n_internal_images: int
     experiment_id: str
 
