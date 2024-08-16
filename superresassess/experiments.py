@@ -2,7 +2,7 @@ from typing import Optional, List
 from pathlib import Path
 from pydantic import BaseModel, field_serializer
 
-from superresassess.assessment_methods import AssessmentEnum
+from superresassess.assessment_base import AssessmentEnum
 from superresassess.configurations_io import (
     read_yaml_as_configuration,
     write_configuration_as_yaml,
