@@ -1,9 +1,10 @@
+from monai.data.meta_tensor import MetaTensor
 from superresassess.preprocessing import PrepareHRLRData
 
 import torch
 from pathlib import Path
-from monai.data import ITKWriter
-from monai.transforms import LoadImage
+from monai.data.image_writer import ITKWriter
+from monai.transforms.io.array import LoadImage
 import pytest
 import numpy as np
 
@@ -42,6 +43,8 @@ def test_preprocessing_pipeline(prepare_example_image):
     hr_image = reader(hr_path)
     lr_image = reader(lr_path)
 
+    assert isinstance(hr_image, MetaTensor)
+    assert isinstance(lr_image, MetaTensor)
     assert hr_path.is_file()
     assert lr_path.is_file()
     assert (np.diag(hr_image.meta["affine"]) == np.array([0.5, 0.5, 0.5, 1.0])).all()

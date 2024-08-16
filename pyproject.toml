@@ -15,6 +15,11 @@ itk = "^5.4.0"
 nibabel = "^5.2.1"
 numpy = "<2.0"
 pandas = "^2.2.2"
+typer = "^0.12.3"
+pyright = "^1.1.376"
+
+[tool.poetry.scripts]
+assess = 'superresassess.console:main'
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

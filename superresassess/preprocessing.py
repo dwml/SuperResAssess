@@ -1,7 +1,18 @@
-import monai
-import torch
-
 from pathlib import Path
+from typing import Sequence
+
+import torch.utils.data
+
+from monai.transforms.compose import Compose
+from monai.transforms.io.array import LoadImage, SaveImage
+from monai.transforms.utility.array import EnsureChannelFirst
+from monai.transforms.spatial.array import Orientation, Spacing, ResampleToMatch
+from monai.transforms.intensity.array import (
+    ScaleIntensityRangePercentiles,
+    GaussianSmooth,
+)
+from monai.utils.misc import first
+from monai.data.dataset import ArrayDataset
 
 
 def _get_preprocessing_loader(
@@ -11,25 +22,23 @@ def _get_preprocessing_loader(
     upper_out: int | float = 255,
     orientation: str = "RAS",
 ):
-    return monai.transforms.Compose(
+    return Compose(
         [
-            monai.transforms.LoadImage(),
-            monai.transforms.EnsureChannelFirst(),
-            monai.transforms.Orientation(axcodes=orientation),
-            monai.transforms.ScaleIntensityRangePercentiles(
+            LoadImage(),
+            EnsureChannelFirst(),
+            Orientation(axcodes=orientation),
+            ScaleIntensityRangePercentiles(
                 lower_percentile, upper_percentile, lower_out, upper_out
             ),
         ]
     )
 
 
-def _get_downsampler(
-    sigma: float, lr_pixdim: tuple[float, float, float]
-) -> torch.nn.Module:
-    return monai.transforms.Compose(
+def _get_downsampler(sigma: float, lr_pixdim: Sequence[float]) -> Compose:
+    return Compose(
         [
-            monai.transforms.GaussianSmooth(sigma=sigma),
-            monai.transforms.Spacing(lr_pixdim),
+            GaussianSmooth(sigma=sigma),
+            Spacing(lr_pixdim),
         ]
     )
 
@@ -71,37 +80,38 @@ class PrepareHRLRData:
 
     def prepare_data(self, file_ending: str, raw_path: Path, processed_path: Path):
         files = list(raw_path.glob(f"**/*{file_ending}"))
-        print(files)
         hr_path = processed_path.joinpath("hr")
         hr_path.mkdir(parents=True, exist_ok=True)
         lr_path = processed_path.joinpath("lr")
         lr_path.mkdir(parents=True, exist_ok=True)
 
-        lr_saver = monai.transforms.SaveImage(
+        lr_saver = SaveImage(
             output_dir=lr_path,
             output_postfix="",
             separate_folder=False,  # already created separate folders
         )
-        hr_saver = monai.transforms.SaveImage(
+        hr_saver = SaveImage(
             output_dir=hr_path,
             output_postfix="",
             separate_folder=False,  # already created separate folders
         )
 
-        ds = monai.data.ArrayDataset(files, self.preprocessing_loader)
+        ds = ArrayDataset(files, self.preprocessing_loader)
+
+        # this must be the torch DataLoader, the monai DataLoader is breaking the tests
         loader = torch.utils.data.DataLoader(ds, batch_size=None)
 
-        img = monai.utils.first(loader)
-        hr_pixdim = img.pixdim
-        lr_pixdim = [dim * self.scale for dim in hr_pixdim]
+        img = first(loader)
+        hr_pixdim = img.pixdim  # type: ignore
+        lr_pixdim = tuple([dim * self.scale for dim in hr_pixdim])
 
         downsampler = _get_downsampler(self.sigma, lr_pixdim)
-        matcher = monai.transforms.ResampleToMatch(mode="bilinear")
+        matcher = ResampleToMatch(mode="bilinear")
 
         for im in loader:
             im = im[0, ...]
             im_lr = downsampler(im)
-            im_interpolated = matcher(im_lr, im)
+            im_interpolated = matcher(im_lr, im)  # type: ignore
 
             hr_saver(im)
             lr_saver(im_interpolated)

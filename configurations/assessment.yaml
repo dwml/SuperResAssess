@@ -1,0 +1,13 @@
+---
+  train_val_test_ratio: [0.6, 0.2, 0.2]
+  samples_per_image: 200
+  train_batch_size: 6
+  val_batch_size: 1
+  test_batch_size: 1
+  train_workers: 16
+  val_workers: 16
+  test_workers: 16
+  train_roi_size: [64, 64, 64]
+  max_epochs: 50
+  learning_rate: 1e-4
+  dict_keys: ["img", "lab"]

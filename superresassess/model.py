@@ -110,5 +110,12 @@ class LitReCNN(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)  # type: ignore
         return optimizer
+
+
+def _setup_seeded_model(
+    model_type: type[L.LightningModule], model_config: ReCNNConfiguration, seed: int
+) -> L.LightningModule:
+    L.seed_everything(seed, workers=True)
+    return model_type(model_config)
