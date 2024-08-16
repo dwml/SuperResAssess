@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Sequence
 
+import torch.utils.data
+
 from monai.transforms.compose import Compose
 from monai.transforms.io.array import LoadImage, SaveImage
 from monai.transforms.utility.array import EnsureChannelFirst
@@ -11,7 +13,6 @@ from monai.transforms.intensity.array import (
 )
 from monai.utils.misc import first
 from monai.data.dataset import ArrayDataset
-from monai.data.dataloader import DataLoader
 
 
 def _get_preprocessing_loader(
@@ -96,7 +97,9 @@ class PrepareHRLRData:
         )
 
         ds = ArrayDataset(files, self.preprocessing_loader)
-        loader = DataLoader(ds, batch_size=None)
+
+        # this must be the torch DataLoader, the monai DataLoader is breaking the tests
+        loader = torch.utils.data.DataLoader(ds, batch_size=None)
 
         img = first(loader)
         hr_pixdim = img.pixdim  # type: ignore
