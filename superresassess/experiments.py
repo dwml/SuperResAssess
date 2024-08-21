@@ -6,7 +6,7 @@ from superresassess.configurations_io import (
     read_yaml_as_configuration,
     write_configuration_as_yaml,
 )
-from superresassess.data import DataConfig
+from superresassess.data import CroppedDataLoaderConfig, DataLoaderConfig
 from superresassess.assessment.enums import AssessmentEnum
 
 HoldoutProportion = tuple[float, float, float]
@@ -14,18 +14,24 @@ HoldoutProportion = tuple[float, float, float]
 DEFAULT_EXPERIMENT_SETTINGS = {
     "train_val_test_ratio": (0.6, 0.2, 0.2),
     "log_path": "logs/",
-    "data_config": {
-        "train_batch_size": 6,
-        "val_batch_size": 1,
-        "test_batch_size": 1,
-        "train_workers": 16,
-        "val_workers": 16,
-        "test_workers": 16,
-        "train_roi_size": (64, 64, 64),
-        "max_epochs": 50,
-        "learning_rate": 1e-4,
+    "max_epochs": 50,
+    "learning_rate": 1e-4,
+    "training_dataloader_config": {
         "dict_keys": ("img", "lab"),
+        "batch_size": 6,
+        "num_workers": 16,
+        "roi_size": (64, 64, 64),
         "samples_per_image": 200,
+    },
+    "validation_dataloader_config": {
+        "dict_keys": ("img", "lab"),
+        "batch_size": 1,
+        "num_workers": 16,
+    },
+    "testing_dataloader_config": {
+        "dict_keys": ("img", "lab"),
+        "batch_size": 1,
+        "num_workers": 16,
     },
     "n_internal_images": 20,
 }
@@ -45,7 +51,11 @@ class ExperimentConfiguration(BaseModel):
     assessment_method: AssessmentEnum
     train_val_test_ratio: HoldoutProportion
     log_path: Path
-    data_config: DataConfig
+    learning_rate: float
+    max_epochs: int
+    training_dataloader_config: CroppedDataLoaderConfig
+    validation_dataloader_config: DataLoaderConfig
+    testing_dataloader_config: DataLoaderConfig
     n_internal_images: int
     experiment_id: str
     seed: int
@@ -80,14 +90,29 @@ def setup_experiments(
     if iterations is None:
         for i, mthd in enumerate(experiment_config.assessment_methods):
             experiment_id = f"{1 + i:>05}"
-            data_config = DataConfig(**DEFAULT_EXPERIMENT_SETTINGS["data_config"])
+            training_dataloader_config = CroppedDataLoaderConfig(
+                seed=initial_seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["training_dataloader_config"],
+            )
+            validation_dataloader_config = DataLoaderConfig(
+                seed=initial_seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["validation_dataloader_config"],
+            )
+            testing_dataloader_config = DataLoaderConfig(
+                seed=initial_seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["testing_dataloader_config"],
+            )
             individual_experiment = ExperimentConfiguration(
                 assessment_method=mthd,
                 train_val_test_ratio=DEFAULT_EXPERIMENT_SETTINGS[
                     "train_val_test_ratio"
                 ],
                 log_path=DEFAULT_EXPERIMENT_SETTINGS["log_path"],
-                data_config=data_config,
+                learning_rate=DEFAULT_EXPERIMENT_SETTINGS["learning_rate"],
+                max_epochs=DEFAULT_EXPERIMENT_SETTINGS["max_epochs"],
+                training_dataloader_config=training_dataloader_config,
+                validation_dataloader_config=validation_dataloader_config,
+                testing_dataloader_config=testing_dataloader_config,
                 n_internal_images=DEFAULT_EXPERIMENT_SETTINGS["n_internal_images"],
                 experiment_id=experiment_id,
                 seed=initial_seed,
@@ -102,14 +127,29 @@ def setup_experiments(
         for j in range(iterations):
             seed = initial_seed + j
             experiment_id = f"{1 + i*iterations + j:>05}"
-            data_config = DataConfig(**DEFAULT_EXPERIMENT_SETTINGS["data_config"])
+            training_dataloader_config = CroppedDataLoaderConfig(
+                seed=seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["training_dataloader_config"],
+            )
+            validation_dataloader_config = DataLoaderConfig(
+                seed=seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["validation_dataloader_config"],
+            )
+            testing_dataloader_config = DataLoaderConfig(
+                seed=seed,
+                **DEFAULT_EXPERIMENT_SETTINGS["testing_dataloader_config"],
+            )
             individual_experiment = ExperimentConfiguration(
                 assessment_method=mthd,
                 train_val_test_ratio=DEFAULT_EXPERIMENT_SETTINGS[
                     "train_val_test_ratio"
                 ],
                 log_path=DEFAULT_EXPERIMENT_SETTINGS["log_path"],
-                data_config=data_config,
+                learning_rate=DEFAULT_EXPERIMENT_SETTINGS["learning_rate"],
+                max_epochs=DEFAULT_EXPERIMENT_SETTINGS["max_epochs"],
+                training_dataloader_config=training_dataloader_config,
+                validation_dataloader_config=validation_dataloader_config,
+                testing_dataloader_config=testing_dataloader_config,
                 n_internal_images=DEFAULT_EXPERIMENT_SETTINGS["n_internal_images"],
                 experiment_id=experiment_id,
                 seed=seed,

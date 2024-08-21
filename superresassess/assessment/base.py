@@ -6,6 +6,12 @@ from lightning import LightningModule
 from superresassess.model import ReCNNConfiguration
 from superresassess.data import DataListType
 from superresassess.experiments import ExperimentConfiguration
+from superresassess.seeded import (
+    SeededDataLoaderProvider,
+    SeededCroppedDataLoaderProvider,
+    SeededModelProvider,
+)
+from superresassess.fold import Fold
 
 
 def _check_ratios_with_folds(
@@ -31,33 +37,56 @@ def _check_ratios_with_folds(
 class AssessmentMethod:
     def __init__(
         self,
-        lightning_module: type[LightningModule],
+        lightning_module_type: type[LightningModule],
         lightning_module_config: ReCNNConfiguration,
         dataset: DataListType,
         experiment_config: ExperimentConfiguration,
     ):
-        self.lightning_module_type = lightning_module
-        self.lightning_module_config = lightning_module_config
-        self.dataset = dataset
         self.experiment_config = experiment_config
+        self.seeded_model_provider = SeededModelProvider(
+            lightning_module_type, lightning_module_config, self.experiment_config.seed
+        )
+        self.dataset = dataset
         self.best_model: Optional[LightningModule] = None
         self.assessment: Optional[float] = None
         self.n_epochs: Optional[int] = None
+        self.fold = Fold(
+            seeded_model_provider=SeededModelProvider(
+                lightning_module_type,
+                lightning_module_config,
+                self.experiment_config.seed,
+            ),
+            seeded_training_provider=SeededCroppedDataLoaderProvider(
+                self.experiment_config.training_dataloader_config
+            ),
+            seeded_validation_provider=SeededDataLoaderProvider(
+                self.experiment_config.validation_dataloader_config
+            ),
+            seeded_testing_provider=SeededDataLoaderProvider(
+                self.experiment_config.testing_dataloader_config
+            ),
+            log_path=self.experiment_config.log_path,
+            experiment_id=self.experiment_config.experiment_id,
+            max_epochs=self.experiment_config.max_epochs,
+            limit_train_batches=self.experiment_config.training_dataloader_config.limit_train_batches,
+        )
 
         # This might need to move to the assess method
         _check_ratios_with_folds(
             self.experiment_config.train_val_test_ratio,
             self.experiment_config.n_internal_images,
         )
-        self._setup_file_splitting(
-            self.experiment_config.train_val_test_ratio,
-            self.experiment_config.n_internal_images,
-        )
+        self._set_internal_external_test_data()
+        self._split_files()
+
+    def _set_internal_external_test_data(self):
+        self._internal_images = self.dataset[: self.experiment_config.n_internal_images]
+        self._external_test_data = self.dataset[
+            self.experiment_config.n_internal_images :
+        ]
 
     @abstractmethod
-    def _setup_file_splitting(
-        self, train_val_test_ratio: tuple[float, float, float], n_internal_images: int
-    ) -> None:
+    def _split_files(self) -> None:
         pass
 
     @abstractmethod

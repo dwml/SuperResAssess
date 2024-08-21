@@ -4,7 +4,12 @@ import pytest
 
 from superresassess.assessment.base import _check_ratios_with_folds
 from superresassess.assessment.enums import AssessmentEnum
-from superresassess.data import ImageDatasetd, get_image_loader, DataConfig
+from superresassess.data import (
+    ImageDatasetd,
+    get_image_loader,
+    DataLoaderConfig,
+    CroppedDataLoaderConfig,
+)
 from superresassess.experiments import ExperimentConfiguration
 
 from lightning import Trainer
@@ -63,33 +68,36 @@ class AssessmentTestSetup:
     my_max_epochs = 2
     my_n_internal_images = 20
     my_experiment_id = "00001"
-    my_fast_data_config = DataConfig(
-        max_epochs=my_max_epochs,
-        samples_per_image=200,
-        train_batch_size=32,
-        val_batch_size=1,
-        test_batch_size=1,
-        train_workers=41,
-        val_workers=41,
-        test_workers=1,
-        train_roi_size=(32, 32, 32),
-        learning_rate=1e-3,
+    my_learning_rate = 1e-3
+    my_fast_training_dataloader = CroppedDataLoaderConfig(
+        seed=my_seed,
         dict_keys=("img", "lab"),
+        batch_size=32,
+        num_workers=41,
+        roi_size=(32, 32, 32),
+        samples_per_image=200,
         limit_train_batches=1,
     )
-    my_not_so_fast_data_config = DataConfig(
-        max_epochs=my_max_epochs,
-        samples_per_image=200,
-        train_batch_size=32,
-        val_batch_size=1,
-        test_batch_size=1,
-        train_workers=41,
-        val_workers=41,
-        test_workers=1,
-        train_roi_size=(32, 32, 32),
-        learning_rate=1e-3,
+    my_not_so_fast_training_dataloader = CroppedDataLoaderConfig(
+        seed=my_seed,
         dict_keys=("img", "lab"),
+        batch_size=32,
+        num_workers=41,
+        roi_size=(32, 32, 32),
+        samples_per_image=200,
         limit_train_batches=20,
+    )
+    my_validation_dataloader = DataLoaderConfig(
+        seed=my_seed,
+        dict_keys=("img", "lab"),
+        batch_size=1,
+        num_workers=41,
+    )
+    my_testing_dataloader = DataLoaderConfig(
+        seed=my_seed,
+        dict_keys=("img", "lab"),
+        batch_size=1,
+        num_workers=41,
     )
 
     @pytest.fixture(scope="function")
@@ -98,7 +106,11 @@ class AssessmentTestSetup:
             assessment_method=AssessmentEnum("three_way_holdout"),
             train_val_test_ratio=(0.6, 0.2, 0.2),
             log_path=tmp_path,
-            data_config=self.my_not_so_fast_data_config,
+            learning_rate=self.my_learning_rate,
+            max_epochs=self.my_max_epochs,
+            training_dataloader_config=self.my_not_so_fast_training_dataloader,
+            validation_dataloader_config=self.my_validation_dataloader,
+            testing_dataloader_config=self.my_testing_dataloader,
             n_internal_images=self.my_n_internal_images,
             experiment_id="00001",
             seed=self.my_seed,
