@@ -6,12 +6,12 @@ import yaml
 Config = TypeVar(name="Config", bound=BaseModel)
 
 
-def read_yaml_as_configuration(yaml_file: Path, configuration: type[Config]) -> Config:
-    with open(yaml_file, "r") as stream:
+def read_yaml_as_configuration(yaml_path: Path, configuration: type[Config]) -> Config:
+    with open(yaml_path, "r") as stream:
         config = yaml.safe_load(stream)
     return configuration(**config)
 
 
-def write_configuration_as_yaml(configuration: BaseModel, yaml_file: Path) -> None:
-    with open(yaml_file, "w") as stream:
+def write_configuration_as_yaml(configuration: BaseModel, yaml_path: Path) -> None:
+    with open(yaml_path, "w") as stream:
         yaml.safe_dump(configuration.model_dump(), stream)
