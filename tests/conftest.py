@@ -4,9 +4,10 @@ import nibabel as nib
 import numpy as np
 from lightning import LightningModule
 from superresassess.model import LitReCNN, ReCNNConfiguration
+from superresassess.data import DataListType, DataLoaderConfig, CroppedDataLoaderConfig
 
 
-def _mock_data(n: int, save_dir: Path) -> list[dict[[str], Path]]:
+def _mock_data(n: int, save_dir: Path) -> DataListType:
     """Create 10 hr/lr pairs"""
     # Setup path
     hr_path = save_dir.joinpath("hr")
@@ -32,7 +33,7 @@ def _mock_data(n: int, save_dir: Path) -> list[dict[[str], Path]]:
 
 
 @pytest.fixture(scope="session")
-def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
+def mock_data(tmpdir_factory) -> DataListType:
     """Create 20 hr/lr pairs"""
     # Setup path
     save_dir = Path(tmpdir_factory.mktemp("data"))
@@ -41,7 +42,7 @@ def mock_data(tmpdir_factory) -> list[dict[[str], Path]]:
 
 
 @pytest.fixture(scope="session")
-def mock_data_with_external(tmpdir_factory) -> list[dict[[str], Path]]:
+def mock_data_with_external(tmpdir_factory) -> DataListType:
     """Create 40 hr/lr pairs"""
     # Setup path
     save_dir = Path(tmpdir_factory.mktemp("data"))
@@ -66,3 +67,30 @@ def mock_recnn_config() -> ReCNNConfiguration:
 @pytest.fixture(scope="session")
 def mock_model(mock_recnn_config) -> LightningModule:
     return LitReCNN(configuration=mock_recnn_config)
+
+
+N_INTERNAL_IMAGES = 20
+SEED = 2024
+
+
+@pytest.fixture
+def cropped_dataloader_config():
+    return CroppedDataLoaderConfig(
+        seed=SEED,
+        dict_keys=("img", "lab"),
+        batch_size=32,
+        num_workers=41,
+        roi_size=(32, 32, 32),
+        samples_per_image=200,
+        limit_train_batches=20,
+    )
+
+
+@pytest.fixture
+def dataloader_config():
+    return DataLoaderConfig(
+        seed=SEED,
+        dict_keys=("img", "lab"),
+        batch_size=1,
+        num_workers=41,
+    )
