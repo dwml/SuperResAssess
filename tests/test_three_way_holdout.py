@@ -1,8 +1,9 @@
 import pytest
 
-from .test_assessment_methods import AssessmentTestSetup
-from superresassess.three_way_holdout import ThreeWayHoldout
 from superresassess.model import LitReCNN
+from superresassess.three_way_holdout import ThreeWayHoldout
+
+from .test_assessment_methods import AssessmentTestSetup
 
 
 class TestThreeWayHoldout(AssessmentTestSetup):
@@ -23,7 +24,7 @@ class TestThreeWayHoldout(AssessmentTestSetup):
             holdout.experiment_config.log_path.joinpath(
                 holdout.experiment_config.experiment_id
             )
-            .joinpath("assessment")
+            .joinpath("validation")
             .joinpath("metrics.csv")
             .exists()
         )
@@ -33,10 +34,18 @@ class TestThreeWayHoldout(AssessmentTestSetup):
             holdout.test()
 
     @pytest.mark.slow
-    def test_internal_and_external_test_values(self, holdout):
+    def test_internal_and_external_test_values(
+        self, mock_recnn_config, mock_data_with_external, assessment_config
+    ):
+        holdout = ThreeWayHoldout(
+            LitReCNN,
+            mock_recnn_config,
+            mock_data_with_external,
+            assessment_config,
+        )
         holdout.assess()
 
         holdout.test()
 
-        assert holdout.internal_testing_values == pytest.approx(0.166, abs=1e-3)
-        assert holdout.external_testing_values == pytest.approx(0.166, abs=1e-3)
+        assert holdout.internal_testing_loss == pytest.approx(0.166, abs=1e-3)
+        assert holdout.external_testing_loss == pytest.approx(0.166, abs=1e-3)

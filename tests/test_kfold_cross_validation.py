@@ -1,38 +1,23 @@
-import os
-
 import pytest
 
 from superresassess.assessment.enums import AssessmentEnum
 from superresassess.experiments import ExperimentConfiguration
 from superresassess.kfold_cross_validation import KFoldCrossValidation
 from superresassess.model import LitReCNN
-from superresassess.data import DataConfig
-
-N_INTERNAL_IMAGES = 20
-SEED = 2024
-DATA_CONFIG = DataConfig(
-    max_epochs=2,
-    samples_per_image=200,
-    train_batch_size=32,
-    val_batch_size=1,
-    test_batch_size=1,
-    train_workers=41,
-    val_workers=41,
-    test_workers=1,
-    train_roi_size=(32, 32, 32),
-    learning_rate=1e-3,
-    dict_keys=("img", "lab"),
-    limit_train_batches=20,
-)
+from .conftest import N_INTERNAL_IMAGES, SEED
 
 
 @pytest.fixture
-def assessment_config(tmp_path):
+def assessment_config(tmp_path, cropped_dataloader_config, dataloader_config):
     return ExperimentConfiguration(
         assessment_method=AssessmentEnum("k_fold_cross_validation"),
         train_val_test_ratio=(0.6, 0.2, 0.2),
         log_path=tmp_path,
-        data_config=DATA_CONFIG,
+        learning_rate=1e-3,
+        max_epochs=2,
+        training_dataloader_config=cropped_dataloader_config,
+        validation_dataloader_config=dataloader_config,
+        testing_dataloader_config=dataloader_config,
         n_internal_images=N_INTERNAL_IMAGES,
         experiment_id="00001",
         seed=SEED,
@@ -79,38 +64,10 @@ class TestKFoldCrossValidation:
 
         cross_validation.assess()
 
-        # The assess method above, uses data distributed parallelization to use all GPUs
-        # in the machine. It does this by creating separated processes and sending them
-        # individually to each GPU. The downside is that the processes continue
-        # executing the code. The process with local rank 0 is the main process, that
-        # is way we exit all processes that do not have local rank 0
-        local_rank_key = "LOCAL_RANK"
-        if local_rank_key in os.environ.keys():
-            if int(os.environ[local_rank_key]) > 0:
-                pytest.exit("Not main process, exiting...")
-
-        assert (
-            experiment_log_path.joinpath("assessment0")
-            .joinpath("metrics.csv")
-            .is_file()
-        )
-        assert (
-            experiment_log_path.joinpath("assessment1")
-            .joinpath("metrics.csv")
-            .is_file()
-        )
-        assert (
-            experiment_log_path.joinpath("assessment2")
-            .joinpath("metrics.csv")
-            .is_file()
-        )
-        assert (
-            experiment_log_path.joinpath("assessment3")
-            .joinpath("metrics.csv")
-            .is_file()
-        )
-        assert (
-            experiment_log_path.joinpath("assessment4")
-            .joinpath("metrics.csv")
-            .is_file()
-        )
+        assessments = [f"assessment{ii}" for ii in range(5)]
+        for assessment in assessments:
+            assert (
+                experiment_log_path.joinpath(assessment)
+                .joinpath("metrics.csv")
+                .is_file()
+            )
