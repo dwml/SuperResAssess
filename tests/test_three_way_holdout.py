@@ -8,12 +8,12 @@ from .test_assessment_methods import AssessmentTestSetup
 
 class TestThreeWayHoldout(AssessmentTestSetup):
     @pytest.fixture
-    def holdout(self, mock_recnn_config, mock_data_with_external, assessment_config):
+    def holdout(self, mock_recnn_config, mock_data_with_external, experiment_config):
         return ThreeWayHoldout(
             LitReCNN,
             mock_recnn_config,
             mock_data_with_external,
-            assessment_config,
+            experiment_config,
         )
 
     @pytest.mark.slow
@@ -35,13 +35,13 @@ class TestThreeWayHoldout(AssessmentTestSetup):
 
     @pytest.mark.slow
     def test_internal_and_external_test_values(
-        self, mock_recnn_config, mock_data_with_external, assessment_config
+        self, mock_recnn_config, mock_data_with_external, experiment_config
     ):
         holdout = ThreeWayHoldout(
             LitReCNN,
             mock_recnn_config,
             mock_data_with_external,
-            assessment_config,
+            experiment_config,
         )
         holdout.assess()
 

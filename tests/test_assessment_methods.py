@@ -101,7 +101,7 @@ class AssessmentTestSetup:
     )
 
     @pytest.fixture(scope="function")
-    def assessment_config(self, tmp_path):
+    def experiment_config(self, tmp_path):
         return ExperimentConfiguration(
             assessment_method=AssessmentEnum("three_way_holdout"),
             train_val_test_ratio=(0.6, 0.2, 0.2),
