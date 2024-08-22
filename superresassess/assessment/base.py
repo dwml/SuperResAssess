@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import Optional
+from pathlib import Path
 
 from lightning import LightningModule
 
@@ -48,8 +49,11 @@ class AssessmentMethod:
         )
         self.dataset = dataset
         self.best_model: Optional[LightningModule] = None
+        self.best_model_path: Optional[Path] = None
         self.assessment: Optional[float] = None
         self.n_epochs: Optional[int] = None
+        self.internal_testing_loss: Optional[float] = None
+        self.external_testing_loss: Optional[float] = None
         self.fold = Fold(
             seeded_model_provider=SeededModelProvider(
                 lightning_module_type,
