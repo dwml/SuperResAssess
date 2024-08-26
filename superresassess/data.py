@@ -1,6 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional, List, Union, Sequence, Mapping
+from typing import Optional, List, Union, MutableSequence
 import boto3
 
 from monai.transforms.transform import Transform
@@ -10,7 +10,7 @@ from monai.transforms.utility.dictionary import EnsureChannelFirstd, ToTensord
 from monai.data.dataset import Dataset
 
 
-DataListType = Sequence[Mapping[str, Path]]
+DataListType = MutableSequence[dict[str, Path]]
 
 
 class HCP_T2W:

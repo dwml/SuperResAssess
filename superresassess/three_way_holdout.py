@@ -1,6 +1,11 @@
 from pathlib import Path
 
 from superresassess.assessment.base import AssessmentMethod
+from superresassess.assessment.results import (
+    AssessResult,
+    InternalTestResult,
+    ExternalTestResult,
+)
 
 
 class ThreeWayHoldout(AssessmentMethod):
@@ -17,46 +22,33 @@ class ThreeWayHoldout(AssessmentMethod):
         self._val_data = self._internal_images[train_size : train_size + val_size]
         self._internal_test_data = self._internal_images[train_size + val_size :]
 
-    def assess(self) -> None:
+    def assess(self) -> AssessResult:
         self.fold.version = "validation"
 
-        if self.fold.trainer.logger:
-            self.fold.trainer.logger.log_hyperparams(
-                {
-                    "train_data": [str(datum) for datum in self._train_data],
-                    "val_data": [str(datum) for datum in self._val_data],
-                }
-            )
+        best_validation_loss, best_model_path = self.fold.train_and_validate_model(
+            self._train_data, self._val_data
+        )
 
-        self.fold.train_and_validate_model(self._train_data, self._val_data)
+        self.best_validation_loss = best_validation_loss
+        self.best_model_path = best_model_path
 
-        # Checking for global zero makes sure that all spawned processes have finished
-        self.best_validation_loss = (
-            self.fold.trainer.checkpoint_callback.best_model_score  # type: ignore
-        )  # type: ignore
-        self.best_model_path = Path(
-            self.fold.trainer.checkpoint_callback.best_model_path  # type: ignore
-        )  # type: ignore
+        return AssessResult(
+            best_model_path=self.best_model_path, log_versions=["validation"]
+        )
 
-    def test(self) -> None:
-        """Make sure to set devices and nodes to 1 in the trainer, since this makes for
-        reporducible test data."""
-        if not self.best_model_path:
-            raise AttributeError(
-                "Best model path is needed for testing, but does not exist. Run"
-                " ThreeWayHoldout(...).assess() first."
-            )
-
-        # internal testing
+    def internal_test(self, log_versions, best_model_path) -> InternalTestResult:
         self.fold.version = "internal_testing"
         self.internal_testing_loss = self.fold.test_model(
-            self.best_model_path, self._internal_test_data
+            best_model_path, self._internal_test_data
         )
-        print(f"Self internal testing loss {self.internal_testing_loss}")
+        return InternalTestResult(
+            internal_testing_loss=self.internal_testing_loss,
+            num_epochs_trained=-99,
+        )
 
-        # external testing
+    def external_test(self, best_model_path: Path) -> ExternalTestResult:
         self.fold.version = "external_testing"
         self.external_testing_loss = self.fold.test_model(
-            self.best_model_path, self._external_test_data
+            best_model_path, self._external_test_data
         )
-        print(f"Self external testing loss {self.external_testing_loss}")
+        return ExternalTestResult(external_testing_loss=self.external_testing_loss)

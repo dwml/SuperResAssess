@@ -4,6 +4,7 @@ from pathlib import Path
 from superresassess.data import HCP_T2W
 from superresassess.preprocessing import PrepareHRLRData
 from superresassess.experiments import setup_experiments
+from superresassess.assessment.loop import Loop
 
 app = typer.Typer()
 
@@ -92,15 +93,16 @@ def run(
         "\n\nFor details on the configuration see"
         " superresassess.model.ReCNNConfiguration"
     ),
-    assessment_configuration_file: Path = typer.Argument(
-        help="Path to a yaml file containing the assessment configuration."
-        "\n\nFor details on the configuration see"
-        " superresassess.assesment_methods.AssessmentConfig"
-    ),
-    log_dir: Path = typer.Option(
+    cleanup_dir: Path = typer.Argument(
         default=Path("./logs"), help="Path to the logging folder"
     ),
-): ...
+):
+    experiment_list = list(individual_experiment_folder.glob("**/*.yaml"))
+    experiment_list.sort()
+    for experiment in experiment_list:
+        loop = Loop(experiment, image_label_file, model_configuration_file)
+        loop.run_experiment()
+        loop.clean_up_experiment(cleanup_dir)
 
 
 def main():

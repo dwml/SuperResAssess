@@ -100,7 +100,7 @@ def mock_data_path(tmpdir_factory, configuration_directory) -> Path:
 
     data_list = _mock_data(40, save_dir)
 
-    data_text = [",".join(map(str, dictionary.values())) for dictionary in data_list]
+    data_text = [" ".join(map(str, dictionary.values())) for dictionary in data_list]
 
     image_file_path = configuration_directory.joinpath("image_files.txt")
     with open(image_file_path, "w+") as fh:
