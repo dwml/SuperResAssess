@@ -22,7 +22,6 @@ DEFAULT_EXPERIMENT_SETTINGS = {
         "num_workers": 16,
         "roi_size": (64, 64, 64),
         "samples_per_image": 200,
-        "limit_train_batches": 1,
     },
     "validation_dataloader_config": {
         "dict_keys": ("img", "lab"),
