@@ -121,7 +121,7 @@ class Fold:
             monitor="validation_loss",
         )
         self._early_stopping_callback = EarlyStopping(
-            monitor="validation_loss", min_delta=0.01, patience=15
+            monitor="validation_loss", min_delta=0.1, patience=10
         )
 
     @check_version_attribute_exists
