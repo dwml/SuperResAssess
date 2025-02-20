@@ -3,5 +3,5 @@
   iterations: 30
   assessment_methods:
     - three_way_holdout
-    - nested_cross_validation
     - k_fold_cross_validation
+    - nested_cross_validation

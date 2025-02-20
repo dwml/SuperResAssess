@@ -1,9 +1,11 @@
 from abc import abstractmethod
-from typing import Callable, Protocol, Optional, Union
+from typing import Callable, Protocol, Optional, Union, Any
 from pathlib import Path
+import gc
 
+import torch
 from lightning import LightningModule, Trainer
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.loggers import CSVLogger
 from monai.data.dataloader import DataLoader
 
@@ -115,33 +117,74 @@ class Fold:
         self._version = version
         self._logger = CSVLogger(self.log_path, self.experiment_id, self._version)
         self._checkpoint_callback = ModelCheckpoint(
-            self.log_path.joinpath(self.experiment_id).joinpath(self._version)
+            self.log_path.joinpath(self.experiment_id).joinpath(self._version),
+            monitor="validation_loss",
         )
+        self._early_stopping_callback = EarlyStopping(
+            monitor="validation_loss", min_delta=0.1, patience=10
+        )
+
+    @check_version_attribute_exists
+    def train_model(self, train_data: DataListType, checkpoint_path: Path) -> None:
+        model = self.seeded_model_provider.provide()
+        train_loader = self.seeded_training_provider.provide(train_data)
         self.trainer = Trainer(
             logger=self._logger,
-            callbacks=self._checkpoint_callback,
             min_epochs=self.min_epochs,
             max_epochs=self.max_epochs,
             limit_train_batches=self.limit_train_batches,
         )
-
-    @check_version_attribute_exists
-    def train_model(self, train_data: DataListType) -> None:
-        model = self.seeded_model_provider.provide()
-        train_loader = self.seeded_training_provider.provide(train_data)
+        self.trainer.logger.log_hyperparams(
+            {
+                "train_data": [str(datum) for datum in train_data],
+            }
+        )
         self.trainer.fit(model, train_loader)
+        self.trainer.save_checkpoint(checkpoint_path)
         self._version = None
+
+        # Fix memory issues
+        self.trainer = None
+        gc.collect()
+        with torch.no_grad():
+            torch.cuda.empty_cache()
 
     @check_version_attribute_exists
     def train_and_validate_model(
         self, train_data: DataListType, validation_data: DataListType
-    ) -> None:
+    ) -> tuple[Any, Any]:
         model = self.seeded_model_provider.provide()
         train_loader = self.seeded_training_provider.provide(train_data)
         validation_loader = self.seeded_validation_provider.provide(validation_data)
 
+        self.trainer = Trainer(
+            logger=self._logger,
+            callbacks=[self._checkpoint_callback, self._early_stopping_callback],
+            min_epochs=self.min_epochs,
+            max_epochs=self.max_epochs,
+            limit_train_batches=self.limit_train_batches,
+        )
+        self.trainer.logger.log_hyperparams(
+            {
+                "train_data": [str(datum) for datum in train_data],
+                "val_data": [str(datum) for datum in validation_data],
+            }
+        )
         self.trainer.fit(model, train_loader, validation_loader)
+
+        self.trainer.strategy.barrier()
+
+        best_validation_loss = self.trainer.checkpoint_callback.best_model_score
+        best_model_path = self.trainer.checkpoint_callback.best_model_path
         self._version = None
+
+        # Fix memory issues
+        self.trainer = None
+        gc.collect()
+        with torch.no_grad():
+            torch.cuda.empty_cache()
+
+        return (best_validation_loss, best_model_path)
 
     @check_version_attribute_exists
     def test_model(self, checkpoint_path: Path, test_data: DataListType) -> float:
@@ -152,8 +195,18 @@ class Fold:
             num_nodes=1,
             logger=self._logger,
         )
+        self.trainer.logger.log_hyperparams(
+            {
+                "test_data": [str(datum) for datum in test_data],
+            }
+        )
         test_result: float = self.trainer.test(
             model=model, dataloaders=test_loader, ckpt_path=checkpoint_path
         )[0]["test_loss"]  # type: ignore
         self._version = None
+        # Fix memory issues
+        self.trainer = None
+        gc.collect()
+        with torch.no_grad():
+            torch.cuda.empty_cache()
         return test_result

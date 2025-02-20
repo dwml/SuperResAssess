@@ -8,8 +8,8 @@ def read_image_label_file(image_label_file: Path) -> DataListType:
         image_label_lines = file_handle.readlines()
     image_mapping_list = [
         {
-            "img": Path(line.strip().split(",")[0]),
-            "lab": Path(line.strip().split(",")[1]),
+            "img": Path(line.strip().split(" ")[0]),
+            "lab": Path(line.strip().split(" ")[1]),
         }
         for line in image_label_lines
     ]

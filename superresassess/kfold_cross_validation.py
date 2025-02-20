@@ -5,6 +5,11 @@ import pandas as pd
 import numpy as np
 
 from superresassess.assessment.base import AssessmentMethod
+from superresassess.assessment.results import (
+    AssessResult,
+    ExternalTestResult,
+    InternalTestResult,
+)
 from superresassess.data import DataListType
 
 
@@ -82,7 +87,7 @@ class KFoldCrossValidation(AssessmentMethod):
             for i in range(number_of_folds)
         ]
 
-    def assess(self) -> None:
+    def assess(self) -> AssessResult:
         # list to keep track of the epochs and losses for every iteration
         train_sets, test_sets = _prepare_kfold_sets(self._splits)
 
@@ -93,10 +98,22 @@ class KFoldCrossValidation(AssessmentMethod):
             self.fold.version = f"assessment{ii}"
             log_versions.append(self.fold.version)
 
-            self.fold.train_and_validate_model(train_set_ii, test_set_ii)
+            _, _ = self.fold.train_and_validate_model(train_set_ii, test_set_ii)
 
-        epochs: MutableSequence[int] = []
-        losses: MutableSequence[float] = []
+        best_model_path = (
+            self.experiment_config.log_path
+            / self.experiment_config.experiment_id
+            / "refit"
+            / "refit.ckpt"
+        )
+        return AssessResult(
+            best_model_path=best_model_path,
+            log_versions=log_versions,
+        )
+
+    def internal_test(self, log_versions, best_model_path) -> InternalTestResult:
+        epochs = []
+        losses = []
         for log_version in log_versions:
             metrics_path = (
                 self.experiment_config.log_path
@@ -108,10 +125,17 @@ class KFoldCrossValidation(AssessmentMethod):
             epochs = _append_to_list_from_series(series, epochs, "epoch")
             losses = _append_to_list_from_series(series, losses, "validation_loss")
 
-        self.internal_testing_values = np.asarray(losses).mean()
-        self.num_epochs_for_refit = int(np.median(np.asarray(epochs, dtype=int)))
+        # Epochs in metrics.csv start from zero, so add 1 in the next line
+        epochs_array = np.asarray(epochs, dtype=int) + 1
+        self.num_epochs_for_refit = int(np.median(epochs_array))
+        self._refit(best_model_path)
 
-    def _refit(self):
+        return InternalTestResult(
+            internal_testing_loss=np.asarray(losses).mean(),
+            num_epochs_trained=self.num_epochs_for_refit,
+        )
+
+    def _refit(self, best_model_path):
         if not self.num_epochs_for_refit:
             raise AttributeError(
                 "Number of epochs not set, run"
@@ -123,27 +147,12 @@ class KFoldCrossValidation(AssessmentMethod):
         self.fold.min_epochs = self.num_epochs_for_refit
         self.fold.max_epochs = self.num_epochs_for_refit
         self.fold.version = "refit"
-        self.fold.train_model(train_list)
+        self.fold.train_model(train_list, best_model_path)
 
-        self.best_model_path = (
-            self.experiment_config.log_path.joinpath(
-                self.experiment_config.experiment_id
-            )
-            .joinpath("refit")
-            .joinpath("refit.pt")
-        )
+    def external_test(self, best_model_path: Path) -> ExternalTestResult:
+        self.fold.version = "external_testing"
 
-        self.fold.trainer.save_checkpoint(self.best_model_path)
+        testing_values = self.fold.test_model(best_model_path, self._external_test_data)
+        self.external_testing_loss = testing_values
 
-    def test(self):
-        self._refit()
-        if not self.best_model_path:
-            raise AttributeError(
-                "Best model path is not set. Probably because the model wasn't properly"
-                " refit using the KFoldCrossValidation(...)._refit method"
-            )
-
-        testing_values = self.fold.test_model(
-            self.best_model_path, self._external_test_data
-        )
-        self.external_testing_values = testing_values[0]["test_loss"]
+        return ExternalTestResult(external_testing_loss=self.external_testing_loss)

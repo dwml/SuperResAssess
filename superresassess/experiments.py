@@ -14,11 +14,11 @@ HoldoutProportion = tuple[float, float, float]
 DEFAULT_EXPERIMENT_SETTINGS = {
     "train_val_test_ratio": (0.6, 0.2, 0.2),
     "log_path": "logs/",
-    "max_epochs": 50,
-    "learning_rate": 1e-4,
+    "max_epochs": 200,
+    "learning_rate": 1e-3,
     "training_dataloader_config": {
         "dict_keys": ("img", "lab"),
-        "batch_size": 6,
+        "batch_size": 2,
         "num_workers": 16,
         "roi_size": (64, 64, 64),
         "samples_per_image": 200,
@@ -123,10 +123,10 @@ def setup_experiments(
         return
 
     # If we would like to repeat an experiment with a different seed we can do
-    for i, mthd in enumerate(experiment_config.assessment_methods):
-        for j in range(iterations):
-            seed = initial_seed + j
-            experiment_id = f"{1 + i*iterations + j:>05}"
+    for i in range(iterations):
+        for j, mthd in enumerate(experiment_config.assessment_methods):
+            seed = initial_seed + i
+            experiment_id = f"{1 + j + i*len(experiment_config.assessment_methods):>05}"
             training_dataloader_config = CroppedDataLoaderConfig(
                 seed=seed,
                 **DEFAULT_EXPERIMENT_SETTINGS["training_dataloader_config"],

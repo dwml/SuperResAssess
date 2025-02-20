@@ -4,6 +4,11 @@ from pathlib import Path
 
 from lightning import LightningModule
 
+from superresassess.assessment.results import (
+    AssessResult,
+    InternalTestResult,
+    ExternalTestResult,
+)
 from superresassess.model import ReCNNConfiguration
 from superresassess.data import DataListType
 from superresassess.experiments import ExperimentConfiguration
@@ -94,9 +99,15 @@ class AssessmentMethod:
         pass
 
     @abstractmethod
-    def assess(self) -> None:
+    def assess(self) -> AssessResult:
         pass
 
     @abstractmethod
-    def test(self) -> None:
+    def internal_test(
+        self, log_versions: list[str], best_model_path: Path
+    ) -> InternalTestResult:
+        pass
+
+    @abstractmethod
+    def external_test(self, best_model_path: Path) -> ExternalTestResult:
         pass
