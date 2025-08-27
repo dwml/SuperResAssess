@@ -33,7 +33,7 @@ DEFAULT_EXPERIMENT_SETTINGS = {
         "batch_size": 1,
         "num_workers": 16,
     },
-    "n_internal_images": 20,
+    "n_internal_images": 19,
 }
 
 

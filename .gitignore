@@ -162,9 +162,18 @@ cython_debug/
 #.idea/
 
 
+####################################
+####### SuperResAssess #############
+####################################
 # Ignore images
 *.nii.gz
 *.nii
 
 # Ignore individual experiments
 configurations/experiment_configurations/*.yaml
+
+# Ignore logs
+logs
+
+# Ignore graveyard
+graveyard
